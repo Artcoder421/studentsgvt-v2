@@ -239,7 +239,7 @@ $result = $conn->query($sql);
                                     
                                     <div class="item-meta">
                                         <p><i class="fas fa-map-marker-alt"></i> <strong>Location:</strong> <?php echo htmlspecialchars($row['location']); ?></p>
-                                        <p><i class="fas fa-user"></i> <strong>Posted by:</strong> <?php echo htmlspecialchars($row['posted_by']); ?></p>
+                                        <p><i class="fas fa-user"></i> <strong>Posted by:</strong> <?php echo htmlspecialchars($row['reported_by']); ?></p>
                                         <p><i class="fas fa-phone"></i> <strong>Contact:</strong> <?php echo htmlspecialchars($row['contact']); ?></p>
                                         <p><i class="far fa-clock"></i> <small>Posted on <?php echo date('M j, Y g:i A', strtotime($row['date_posted'])); ?></small></p>
                                     </div>

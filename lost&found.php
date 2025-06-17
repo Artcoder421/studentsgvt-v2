@@ -20,8 +20,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $description = $conn->real_escape_string($_POST['description']);
     $location = $conn->real_escape_string($_POST['location']);
     $contact = $conn->real_escape_string($_POST['contact']);
-    $reported_by = $_SESSION['user_id'];
-
+   $reported_by = $_SESSION['first_name'] . ' ' . $_SESSION['second_name'];
     // Handle file upload
     $targetDir = "uploads/";
     $fileName = basename($_FILES["image"]["name"]);
@@ -205,7 +204,7 @@ $conn->close();
         <div class="form-container">
             <h2 class="form-title"><i class="fas fa-search-location"></i> Report Lost Item</h2>
             <?php echo $message; ?>
-            <form action="lost.php" method="post" enctype="multipart/form-data">
+            <form action="" method="post" enctype="multipart/form-data">
                 <div class="form-group">
                     <label>Item Name</label>
                     <input type="text" name="item_name" class="form-control" required>

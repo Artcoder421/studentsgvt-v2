@@ -289,16 +289,16 @@ $result = $conn->query($sql);
                                     
                                     <div class="item-meta">
                                         <p><i class="fas fa-map-marker-alt"></i> <strong>Location:</strong> <?php echo htmlspecialchars($row['location']); ?></p>
-                                        <p><i class="fas fa-user"></i> <strong>Posted by:</strong> <?php echo htmlspecialchars($row['posted_by']); ?></p>
+                                        <p><i class="fas fa-user"></i> <strong>Posted by:</strong> <?php echo htmlspecialchars($row['reported_by']); ?></p>
                                         <p><i class="fas fa-phone"></i> <strong>Contact:</strong> <?php echo htmlspecialchars($row['contact']); ?></p>
                                         <p><i class="far fa-clock"></i> <small>Posted on <?php echo date('M j, Y g:i A', strtotime($row['date_posted'])); ?></small></p>
                                     </div>
                                     
                                     <div class="admin-actions">
-                                        <a href="edit_lost_item.php?id=<?= $row['id'] ?>" class="btn btn-primary btn-sm">
+                                        <a href="#" class="btn btn-primary btn-sm">
                                             <i class="fas fa-edit"></i> Edit
                                         </a>
-                                        <a href="lost_found.php?change_status=<?= $row['id'] ?>&current_status=<?= $row['status'] ?>" class="btn btn-status btn-sm">
+                                        <a href="#" class="btn btn-status btn-sm">
                                             <i class="fas fa-sync-alt"></i> Status
                                         </a>
                                         <a href="lost_found.php?delete=<?= $row['id'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this item?');">
