@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="navyTop" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E3F6D"/>
+      <stop offset="100%" stop-color="#0B1F3A"/>
+    </linearGradient>
+    <linearGradient id="navySide" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#132D52"/>
+      <stop offset="100%" stop-color="#061224"/>
+    </linearGradient>
+    <linearGradient id="navyDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0D2240"/>
+      <stop offset="100%" stop-color="#050E1D"/>
+    </linearGradient>
+    <linearGradient id="glassBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60A5FA" stop-opacity="0.92"/>
+      <stop offset="50%" stop-color="#2563EB" stop-opacity="0.82"/>
+      <stop offset="100%" stop-color="#1E3A8A" stop-opacity="0.95"/>
+    </linearGradient>
+    <linearGradient id="glassShine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.65"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.0"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F7DF8D"/>
+      <stop offset="45%" stop-color="#D4A643"/>
+      <stop offset="100%" stop-color="#8B6418"/>
+    </linearGradient>
+    <linearGradient id="goldLight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFF0B8"/>
+      <stop offset="100%" stop-color="#C89B3C"/>
+    </linearGradient>
+    <radialGradient id="floorShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0B1F3A" stop-opacity="0.22"/>
+      <stop offset="70%" stop-color="#0B1F3A" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#0B1F3A" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <rect width="256" height="256" fill="#FFFFFF"/>
+  <ellipse cx="128" cy="218" rx="74" ry="15" fill="url(#floorShadow)"/>
+  <!-- Base Pedestal -->
+  <rect x="70" y="190" width="116" height="22" rx="8" fill="url(#navyDark)"/>
+  <rect x="84" y="172" width="88" height="22" rx="7" fill="url(#navyTop)"/>
+  <rect x="102" y="180" width="52" height="7" rx="3" fill="url(#gold)"/>
+  <!-- Stem -->
+  <path d="M114,136 L142,136 L148,174 L108,174 Z" fill="url(#gold)"/>
+  <!-- Handles -->
+  <path d="M74,64 C40,64 40,120 82,120" fill="none" stroke="url(#gold)" stroke-width="13" stroke-linecap="round"/>
+  <path d="M182,64 C216,64 216,120 174,120" fill="none" stroke="url(#gold)" stroke-width="13" stroke-linecap="round"/>
+  <!-- Cup Body -->
+  <path d="M68,46 L188,46 L176,118 C172,140 152,152 128,152 C104,152 84,140 80,118 Z" fill="url(#navyTop)"/>
+  <!-- Frosted Royal Blue Cup Shield -->
+  <path d="M84,56 L172,56 L163,114 C160,130 146,140 128,140 C110,140 96,130 93,114 Z" fill="url(#glassBlue)"/>
+  <!-- Gold Rim -->
+  <ellipse cx="128" cy="48" rx="62" ry="13" fill="url(#gold)"/>
+  <ellipse cx="128" cy="48" rx="50" ry="7" fill="#0B1F3A"/>
+  <!-- Gold Center Star Emblem -->
+  <polygon points="128,72 135,88 152,89 139,100 143,117 128,107 113,117 117,100 104,89 121,88" fill="url(#goldLight)"/>
+</svg>

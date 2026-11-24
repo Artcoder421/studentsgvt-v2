@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="navyTop" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E3F6D"/>
+      <stop offset="100%" stop-color="#0B1F3A"/>
+    </linearGradient>
+    <linearGradient id="navySide" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#132D52"/>
+      <stop offset="100%" stop-color="#061224"/>
+    </linearGradient>
+    <linearGradient id="navyDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0D2240"/>
+      <stop offset="100%" stop-color="#050E1D"/>
+    </linearGradient>
+    <linearGradient id="glassBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60A5FA" stop-opacity="0.92"/>
+      <stop offset="50%" stop-color="#2563EB" stop-opacity="0.82"/>
+      <stop offset="100%" stop-color="#1E3A8A" stop-opacity="0.95"/>
+    </linearGradient>
+    <linearGradient id="glassShine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.65"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.0"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F7DF8D"/>
+      <stop offset="45%" stop-color="#D4A643"/>
+      <stop offset="100%" stop-color="#8B6418"/>
+    </linearGradient>
+    <linearGradient id="goldLight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFF0B8"/>
+      <stop offset="100%" stop-color="#C89B3C"/>
+    </linearGradient>
+    <radialGradient id="floorShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0B1F3A" stop-opacity="0.22"/>
+      <stop offset="70%" stop-color="#0B1F3A" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#0B1F3A" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <rect width="256" height="256" fill="#FFFFFF"/>
+  <ellipse cx="128" cy="216" rx="80" ry="16" fill="url(#floorShadow)"/>
+  <!-- 3D Depth Shadow Body -->
+  <rect x="50" y="64" width="164" height="142" rx="28" fill="url(#navyDark)"/>
+  <!-- Main Calendar Face -->
+  <rect x="42" y="54" width="164" height="142" rx="28" fill="url(#glassBlue)"/>
+  <!-- Top Navy Header -->
+  <path d="M42,82 C42,66 55,54 70,54 L178,54 C193,54 206,66 206,82 L206,102 L42,102 Z" fill="url(#navyTop)"/>
+  <!-- Gold Binding Rings -->
+  <rect x="78" y="34" width="16" height="38" rx="8" fill="url(#gold)"/>
+  <rect x="154" y="34" width="16" height="38" rx="8" fill="url(#gold)"/>
+  <!-- Inner White/Frosted Grid Tiles -->
+  <rect x="64" y="118" width="28" height="24" rx="7" fill="#FFFFFF" opacity="0.85"/>
+  <rect x="110" y="118" width="28" height="24" rx="7" fill="#FFFFFF" opacity="0.85"/>
+  <rect x="156" y="118" width="28" height="24" rx="7" fill="url(#goldLight)"/>
+  <rect x="64" y="154" width="28" height="24" rx="7" fill="#FFFFFF" opacity="0.65"/>
+  <rect x="110" y="154" width="28" height="24" rx="7" fill="url(#gold)"/>
+  <rect x="156" y="154" width="28" height="24" rx="7" fill="#FFFFFF" opacity="0.65"/>
+</svg>

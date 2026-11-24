@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="navyTop" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E3F6D"/>
+      <stop offset="100%" stop-color="#0B1F3A"/>
+    </linearGradient>
+    <linearGradient id="navySide" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#132D52"/>
+      <stop offset="100%" stop-color="#061224"/>
+    </linearGradient>
+    <linearGradient id="navyDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0D2240"/>
+      <stop offset="100%" stop-color="#050E1D"/>
+    </linearGradient>
+    <linearGradient id="glassBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60A5FA" stop-opacity="0.92"/>
+      <stop offset="50%" stop-color="#2563EB" stop-opacity="0.82"/>
+      <stop offset="100%" stop-color="#1E3A8A" stop-opacity="0.95"/>
+    </linearGradient>
+    <linearGradient id="glassShine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.65"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.0"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F7DF8D"/>
+      <stop offset="45%" stop-color="#D4A643"/>
+      <stop offset="100%" stop-color="#8B6418"/>
+    </linearGradient>
+    <linearGradient id="goldLight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFF0B8"/>
+      <stop offset="100%" stop-color="#C89B3C"/>
+    </linearGradient>
+    <radialGradient id="floorShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0B1F3A" stop-opacity="0.22"/>
+      <stop offset="70%" stop-color="#0B1F3A" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#0B1F3A" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <rect width="256" height="256" fill="#FFFFFF"/>
+  <ellipse cx="128" cy="216" rx="84" ry="18" fill="url(#floorShadow)"/>
+  <!-- Isometric Base Platform -->
+  <polygon points="128,158 214,186 128,214 42,186" fill="url(#navyDark)"/>
+  <!-- Main Building Left Face -->
+  <polygon points="56,92 128,120 128,200 56,172" fill="url(#navySide)"/>
+  <!-- Main Building Right Glass Face -->
+  <polygon points="128,120 200,92 200,172 128,200" fill="url(#glassBlue)"/>
+  <!-- Roof Isometric Top -->
+  <polygon points="128,62 206,92 128,122 50,92" fill="url(#navyTop)"/>
+  <polygon points="128,68 196,92 128,116 60,92" fill="url(#gold)" opacity="0.22"/>
+  <!-- Gold Roof Trim -->
+  <polyline points="50,92 128,122 206,92" fill="none" stroke="url(#gold)" stroke-width="5" stroke-linejoin="round"/>
+  <!-- Illuminated Gold Windows Left -->
+  <polygon points="72,114 90,121 90,137 72,130" fill="url(#goldLight)" rx="2"/>
+  <polygon points="98,124 116,131 116,147 98,140" fill="url(#goldLight)"/>
+  <polygon points="72,144 90,151 90,167 72,160" fill="url(#goldLight)"/>
+  <polygon points="98,154 116,161 116,177 98,170" fill="url(#goldLight)"/>
+  <!-- Glass Facade Mullions Right -->
+  <polygon points="140,128 158,121 158,137 140,144" fill="#EFF6FF" opacity="0.8"/>
+  <polygon points="168,117 186,110 186,126 168,133" fill="#EFF6FF" opacity="0.8"/>
+  <polygon points="140,156 158,149 158,165 140,172" fill="#EFF6FF" opacity="0.65"/>
+  <polygon points="168,145 186,138 186,154 168,161" fill="#EFF6FF" opacity="0.65"/>
+  <!-- Floating 3D Gold Key Badge -->
+  <g transform="translate(154,38)">
+    <circle cx="30" cy="30" r="24" fill="url(#gold)" stroke="#FFF4CC" stroke-width="2"/>
+    <circle cx="30" cy="30" r="10" fill="url(#navyTop)"/>
+    <rect x="25" y="48" width="10" height="32" rx="4" fill="url(#gold)"/>
+    <rect x="34" y="62" width="11" height="6" rx="2" fill="url(#gold)"/>
+    <rect x="34" y="72" width="8" height="6" rx="2" fill="url(#gold)"/>
+  </g>
+</svg>

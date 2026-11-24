@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="navyTop" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E3F6D"/>
+      <stop offset="100%" stop-color="#0B1F3A"/>
+    </linearGradient>
+    <linearGradient id="navySide" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#132D52"/>
+      <stop offset="100%" stop-color="#061224"/>
+    </linearGradient>
+    <linearGradient id="navyDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0D2240"/>
+      <stop offset="100%" stop-color="#050E1D"/>
+    </linearGradient>
+    <linearGradient id="glassBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60A5FA" stop-opacity="0.92"/>
+      <stop offset="50%" stop-color="#2563EB" stop-opacity="0.82"/>
+      <stop offset="100%" stop-color="#1E3A8A" stop-opacity="0.95"/>
+    </linearGradient>
+    <linearGradient id="glassShine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.65"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.0"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F7DF8D"/>
+      <stop offset="45%" stop-color="#D4A643"/>
+      <stop offset="100%" stop-color="#8B6418"/>
+    </linearGradient>
+    <linearGradient id="goldLight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFF0B8"/>
+      <stop offset="100%" stop-color="#C89B3C"/>
+    </linearGradient>
+    <radialGradient id="floorShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0B1F3A" stop-opacity="0.22"/>
+      <stop offset="70%" stop-color="#0B1F3A" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#0B1F3A" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <rect width="256" height="256" fill="#FFFFFF"/>
+  <ellipse cx="122" cy="214" rx="78" ry="16" fill="url(#floorShadow)"/>
+  <!-- 3D Satchel / Campus Case -->
+  <rect x="44" y="76" width="136" height="118" rx="26" fill="url(#navyDark)"/>
+  <rect x="38" y="68" width="136" height="118" rx="26" fill="url(#navyTop)"/>
+  <!-- Top Handle -->
+  <path d="M80,68 L80,50 C80,38 132,38 132,50 L132,68" fill="none" stroke="url(#gold)" stroke-width="11" stroke-linecap="round"/>
+  <!-- Front Glass Pocket -->
+  <rect x="54" y="108" width="104" height="62" rx="16" fill="url(#glassBlue)"/>
+  <rect x="58" y="112" width="96" height="24" rx="10" fill="url(#glassShine)"/>
+  <!-- Gold Clasp -->
+  <rect x="94" y="96" width="24" height="26" rx="6" fill="url(#gold)"/>
+  <circle cx="106" cy="111" r="4" fill="#0B1F3A"/>
+  <!-- Floating 3D Gold Magnifier -->
+  <g transform="translate(116,98)">
+    <line x1="74" y1="74" x2="108" y2="108" stroke="url(#navyTop)" stroke-width="18" stroke-linecap="round"/>
+    <line x1="74" y1="74" x2="108" y2="108" stroke="url(#gold)" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="46" cy="46" r="42" fill="url(#gold)"/>
+    <circle cx="46" cy="46" r="32" fill="url(#glassBlue)"/>
+    <path d="M26,32 A24,24 0 0,1 58,24" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" opacity="0.75"/>
+  </g>
+</svg>

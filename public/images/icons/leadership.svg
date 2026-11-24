@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="navyTop" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E3F6D"/>
+      <stop offset="100%" stop-color="#0B1F3A"/>
+    </linearGradient>
+    <linearGradient id="navySide" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#132D52"/>
+      <stop offset="100%" stop-color="#061224"/>
+    </linearGradient>
+    <linearGradient id="navyDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0D2240"/>
+      <stop offset="100%" stop-color="#050E1D"/>
+    </linearGradient>
+    <linearGradient id="glassBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60A5FA" stop-opacity="0.92"/>
+      <stop offset="50%" stop-color="#2563EB" stop-opacity="0.82"/>
+      <stop offset="100%" stop-color="#1E3A8A" stop-opacity="0.95"/>
+    </linearGradient>
+    <linearGradient id="glassShine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.65"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.0"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F7DF8D"/>
+      <stop offset="45%" stop-color="#D4A643"/>
+      <stop offset="100%" stop-color="#8B6418"/>
+    </linearGradient>
+    <linearGradient id="goldLight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFF0B8"/>
+      <stop offset="100%" stop-color="#C89B3C"/>
+    </linearGradient>
+    <radialGradient id="floorShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0B1F3A" stop-opacity="0.22"/>
+      <stop offset="70%" stop-color="#0B1F3A" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#0B1F3A" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <rect width="256" height="256" fill="#FFFFFF"/>
+  <ellipse cx="128" cy="218" rx="72" ry="15" fill="url(#floorShadow)"/>
+  <!-- Outer Gold Shield Bevel -->
+  <path d="M128,32 L204,60 L204,124 C204,174 166,204 128,220 C90,204 52,174 52,124 L52,60 Z" fill="url(#gold)"/>
+  <!-- Navy Inner Shield -->
+  <path d="M128,44 L192,68 L192,124 C192,166 160,192 128,206 C96,192 64,166 64,124 L64,68 Z" fill="url(#navyTop)"/>
+  <!-- Glass Right Facet -->
+  <path d="M128,44 L192,68 L192,124 C192,166 160,192 128,206 Z" fill="url(#glassBlue)" opacity="0.5"/>
+  <!-- Gold Crown / Leadership Pillars -->
+  <polygon points="88,142 96,94 116,114 128,84 140,114 160,94 168,142" fill="url(#goldLight)"/>
+  <rect x="86" y="146" width="84" height="14" rx="5" fill="url(#gold)"/>
+</svg>

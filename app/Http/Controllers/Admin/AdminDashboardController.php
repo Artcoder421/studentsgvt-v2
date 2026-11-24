@@ -1,0 +1,266 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\AccommodationRequest;
+use App\Models\Announcement;
+use App\Models\Candidate;
+use App\Models\CharityCampaign;
+use App\Models\Community;
+use App\Models\Course;
+use App\Models\Election;
+use App\Models\HelpTicket;
+use App\Models\LostFoundItem;
+use App\Models\SiteSetting;
+use App\Models\TimerAnnouncement;
+use App\Models\User;
+use App\Models\VenueBooking;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\View\View;
+
+class AdminDashboardController extends Controller
+{
+    public function index(): View
+    {
+        $metrics = [
+            'users' => User::count(),
+            'courses' => Course::count(),
+            'communities' => Community::count(),
+            'vacant_crs' => Community::where('type', 'course_default')->whereNull('cr_user_id')->count(),
+            'open_tickets' => HelpTicket::whereIn('status', ['open', 'in_progress'])->count(),
+            'pending_bookings' => VenueBooking::where('status', 'pending')->count(),
+            'pending_accommodations' => AccommodationRequest::where('status', 'pending')->count(),
+            'pending_candidates' => Candidate::where('status', 'pending')->count(),
+            'active_timers' => TimerAnnouncement::live()->count(),
+            'urgent_announcements' => Announcement::where('is_urgent', true)->where('is_published', true)->count(),
+            'charity_raised' => CharityCampaign::sum('raised_amount'),
+            'open_lost_found' => LostFoundItem::where('status', 'open')->count(),
+        ];
+
+        $recentTickets = HelpTicket::with('user')->latest()->take(5)->get();
+        $recentBookings = VenueBooking::with(['venue', 'user'])->latest()->take(5)->get();
+        $activeElection = Election::withCount(['candidates', 'votes'])->latest()->first();
+
+        return view('admin.dashboard', compact('metrics', 'recentTickets', 'recentBookings', 'activeElection'));
+    }
+
+    // --- SUPER ADMIN ROLE & USER GOVERNANCE ---
+    public function users(Request $request): View
+    {
+        $search = trim((string) $request->query('q'));
+        $roleFilter = $request->query('role');
+
+        $users = User::with('course')
+            ->when($search, fn ($q) => $q->where('name', 'like', "%{$search}%")->orWhere('reg_no', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%"))
+            ->when($roleFilter, fn ($q) => $q->where('role', $roleFilter))
+            ->orderByRaw("CASE role WHEN 'super_admin' THEN 1 WHEN 'admin' THEN 2 WHEN 'class_rep' THEN 3 ELSE 4 END")
+            ->orderBy('name')
+            ->paginate(20)
+            ->withQueryString();
+
+        $courses = Course::orderBy('code')->get();
+
+        return view('admin.users', compact('users', 'courses', 'search', 'roleFilter'));
+    }
+
+    public function updateUserRole(Request $request, User $user): RedirectResponse
+    {
+        abort_unless($request->user()->isSuperAdmin(), 403, 'Only Super Administrators can assign or revoke user roles.');
+
+        $data = $request->validate([
+            'role' => ['required', 'in:super_admin,admin,class_rep,student'],
+            'course_id' => ['nullable', 'exists:courses,id'],
+            'is_active' => ['nullable', 'boolean'],
+        ]);
+
+        // Prevent super admin from accidentally demoting or locking themselves out
+        if ((int) $user->id === (int) $request->user()->id && $data['role'] !== User::ROLE_SUPER_ADMIN) {
+            return back()->with('error', 'You cannot demote your own Super Admin account.');
+        }
+
+        $user->update([
+            'role' => $data['role'],
+            'course_id' => $data['course_id'] ?? $user->course_id,
+            'is_active' => $request->has('is_active') ? $request->boolean('is_active') : $user->is_active,
+        ]);
+
+        // If promoted to class_rep and has a course, assign their default course community CR seat if currently vacant
+        if ($user->role === User::ROLE_CLASS_REP && $user->course_id) {
+            $defaultCommunity = Community::where('type', 'course_default')
+                ->where('course_id', $user->course_id)
+                ->first();
+
+            if ($defaultCommunity && $defaultCommunity->cr_user_id === null) {
+                $defaultCommunity->update(['cr_user_id' => $user->id]);
+                $defaultCommunity->members()->syncWithoutDetaching([
+                    $user->id => ['member_role' => 'cr', 'joined_at' => now()],
+                ]);
+            }
+        }
+
+        return back()->with('success', "Updated {$user->name}'s role to {$user->roleLabel()}.");
+    }
+
+    // --- COURSES & DEFAULT COMMUNITIES + CR SEAT MANAGEMENT ---
+    public function courses(): View
+    {
+        $courses = Course::with(['defaultCommunity.cr', 'defaultCommunity' => fn ($q) => $q->withCount('members')])
+            ->withCount(['students', 'communities'])
+            ->orderBy('faculty')
+            ->orderBy('code')
+            ->get();
+
+        $eligibleCrs = User::with('course')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        return view('admin.courses', compact('courses', 'eligibleCrs'));
+    }
+
+    public function storeCourse(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'code' => ['required', 'string', 'max:20', 'unique:courses,code'],
+            'name' => ['required', 'string', 'max:180'],
+            'level' => ['required', 'in:bachelor,diploma,certificate,masters'],
+            'faculty' => ['required', 'string', 'max:140'],
+            'duration_years' => ['required', 'integer', 'min:1', 'max:6'],
+            'description' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $course = Course::create([
+            ...$data,
+            'code' => strtoupper($data['code']),
+            'is_active' => true,
+        ]);
+
+        // Automatically create default course community with reserved CR seat controlled by Admins
+        Community::create([
+            'name' => "{$course->code} Official Course Community",
+            'slug' => Str::slug($course->code.'-official'),
+            'description' => "Default official academic and welfare channel for {$course->name} ({$course->code}). Managed by SONIT Administration until a CR is assigned.",
+            'type' => 'course_default',
+            'course_id' => $course->id,
+            'cr_user_id' => null,
+            'created_by' => $request->user()->id,
+            'is_official' => true,
+            'is_active' => true,
+        ]);
+
+        return back()->with('success', "Course {$course->code} created along with its default Course Community.");
+    }
+
+    public function assignCourseCr(Request $request, Course $course): RedirectResponse
+    {
+        $data = $request->validate([
+            'cr_user_id' => ['nullable', 'exists:users,id'],
+        ]);
+
+        $community = Community::firstOrCreate(
+            ['type' => 'course_default', 'course_id' => $course->id],
+            [
+                'name' => "{$course->code} Official Course Community",
+                'slug' => Str::slug($course->code.'-official'),
+                'description' => "Default official community for {$course->name}.",
+                'created_by' => $request->user()->id,
+                'is_official' => true,
+                'is_active' => true,
+            ]
+        );
+
+        $crId = $data['cr_user_id'] ?: null;
+
+        if ($crId) {
+            $crUser = User::findOrFail($crId);
+            if ($crUser->role === User::ROLE_STUDENT) {
+                $crUser->update(['role' => User::ROLE_CLASS_REP, 'course_id' => $course->id]);
+            }
+            $community->update(['cr_user_id' => $crUser->id]);
+            $community->members()->syncWithoutDetaching([
+                $crUser->id => ['member_role' => 'cr', 'joined_at' => now()],
+            ]);
+
+            return back()->with('success', "Assigned {$crUser->name} as Class Representative for {$course->code}.");
+        }
+
+        $community->update(['cr_user_id' => null]);
+
+        return back()->with('success', "CR seat for {$course->code} vacated. SONIT Admins retain full governance of the channel.");
+    }
+
+    // --- EDITABLE MOTTO, VISION, MISSION & SITE SETTINGS ---
+    public function settings(): View
+    {
+        $settings = SiteSetting::orderBy('group')->orderBy('id')->get();
+
+        return view('admin.settings', compact('settings'));
+    }
+
+    public function updateSettings(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'settings' => ['required', 'array'],
+            'settings.*' => ['nullable', 'string', 'max:3000'],
+        ]);
+
+        foreach ($data['settings'] as $key => $value) {
+            SiteSetting::where('key', $key)->update(['value' => $value]);
+        }
+
+        SiteSetting::clearCache();
+
+        return back()->with('success', 'Organization Motto, Vision, Mission, and Portal Settings updated live.');
+    }
+
+    // --- TOP-OF-HOMEPAGE COUNTDOWN TIMER ANNOUNCEMENTS ---
+    public function timers(): View
+    {
+        $timers = TimerAnnouncement::with('creator')->latest()->get();
+
+        return view('admin.timers', compact('timers'));
+    }
+
+    public function storeTimer(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:160'],
+            'subtitle' => ['nullable', 'string', 'max:280'],
+            'category' => ['required', 'in:charity,election,event,deadline,urgent'],
+            'ends_at' => ['required', 'date', 'after:now'],
+            'cta_label' => ['nullable', 'string', 'max:50'],
+            'cta_url' => ['nullable', 'string', 'max:200'],
+            'target_amount' => ['nullable', 'integer', 'min:0'],
+            'raised_amount' => ['nullable', 'integer', 'min:0'],
+            'priority' => ['nullable', 'integer', 'min:0', 'max:100'],
+        ]);
+
+        TimerAnnouncement::create([
+            ...$data,
+            'starts_at' => now(),
+            'raised_amount' => $data['raised_amount'] ?? 0,
+            'priority' => $data['priority'] ?? 10,
+            'is_active' => true,
+            'created_by' => $request->user()->id,
+        ]);
+
+        return back()->with('success', 'Countdown Timer Announcement published to the top of the homepage.');
+    }
+
+    public function toggleTimer(TimerAnnouncement $timer): RedirectResponse
+    {
+        $timer->update(['is_active' => ! $timer->is_active]);
+
+        return back()->with('success', 'Timer announcement status updated.');
+    }
+
+    public function deleteTimer(TimerAnnouncement $timer): RedirectResponse
+    {
+        $timer->delete();
+
+        return back()->with('success', 'Timer announcement deleted.');
+    }
+}
