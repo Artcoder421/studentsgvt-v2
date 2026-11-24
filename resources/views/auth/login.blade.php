@@ -5,49 +5,42 @@
 @section('content')
 <div style="max-width:860px;margin:10px auto;">
     <div class="grid grid-2" style="align-items:stretch;">
-        <div class="card" style="background:var(--nit-black);color:#FFFFFF;border:none;border-top:4px solid var(--nit-blue);border-bottom:3px solid var(--nit-red);display:flex;flex-direction:column;justify-content:space-between;padding:24px;">
+        <div class="card" style="background:var(--nit-black);color:#FFFFFF;border:none;border-top:4px solid var(--nit-blue);border-bottom:3px solid var(--nit-red);display:flex;flex-direction:column;justify-content:space-between;padding:26px;">
             <div>
                 <div class="flex-center mb-3">
-                    <img src="{{ asset('images/nit_logo_badge.png') }}" alt="NIT Official Logo" style="width:48px;height:48px;background:#fff;padding:3px;border-radius:2px;">
+                    <img src="{{ asset('images/nit_logo_badge.png') }}" alt="NIT Official Logo" style="width:52px;height:52px;background:#fff;padding:3px;border-radius:2px;">
                     <div>
-                        <strong style="font-size:17px;display:block;color:#fff;">SONIT · NIT Portal</strong>
+                        <strong style="font-size:18px;display:block;color:#fff;">{{ $siteSettings['org_short_name'] ?? 'SONIT' }} · NIT Portal</strong>
                         <span style="font-size:10.5px;color:var(--nit-blue);text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">National Institute of Transport</span>
                     </div>
                 </div>
-                <h2 style="margin:6px 0 8px;font-size:21px;font-weight:800;line-height:1.2;">Secure Role-Based Student Access</h2>
+
+                <h2 style="margin:8px 0 8px;font-size:21px;font-weight:800;line-height:1.25;color:#FFFFFF;">
+                    Welcome to the Official SONIT Portal
+                </h2>
                 <p style="font-size:13px;color:#CBD5E1;margin:0 0 16px;">
-                    Sign in with your NIT Registration Number (e.g. <span class="mono" style="color:var(--nit-blue);">NIT/BLTM/2022/4805</span>) or institutional email.
+                    Sign in using your NIT Registration Number (e.g. <span class="mono" style="color:var(--nit-blue);">NIT/BLTM/2022/4805</span>) or institutional email to access your course communities, elections, accommodation, and student services.
                 </p>
 
-                <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(0,149,218,0.4);padding:12px;">
-                    <div style="font-size:10.5px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:var(--nit-blue);margin-bottom:8px;">
-                        Quick-Fill Evaluation Accounts
-                    </div>
-                    <div style="display:flex;flex-direction:column;gap:6px;">
-                        <button type="button" class="btn btn-ghost-light btn-sm" style="justify-content:space-between;" data-demo-login data-demo-id="superadmin@sonit.nit.ac.tz" data-demo-pass="SuperAdmin@2026">
-                            <span>Super Admin</span><span class="mono text-xs">superadmin</span>
-                        </button>
-                        <button type="button" class="btn btn-ghost-light btn-sm" style="justify-content:space-between;" data-demo-login data-demo-id="admin@sonit.nit.ac.tz" data-demo-pass="Admin@2026">
-                            <span>SONIT Admin</span><span class="mono text-xs">admin</span>
-                        </button>
-                        <button type="button" class="btn btn-ghost-light btn-sm" style="justify-content:space-between;" data-demo-login data-demo-id="NIT/BLTM/2022/4805" data-demo-pass="ClassRep@2026">
-                            <span>BLTM Class Rep (CR)</span><span class="mono text-xs">BLTM CR</span>
-                        </button>
-                        <button type="button" class="btn btn-ghost-light btn-sm" style="justify-content:space-between;" data-demo-login data-demo-id="NIT/BLTM/2023/7658" data-demo-pass="Student@2026">
-                            <span>BLTM Student</span><span class="mono text-xs">Student</span>
-                        </button>
+                <div style="border-left:3px solid var(--nit-red);background:rgba(255,255,255,0.06);padding:12px 14px;margin-bottom:16px;">
+                    <div style="font-size:10px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:var(--nit-blue);margin-bottom:4px;">Organization Motto</div>
+                    <div style="font-size:13.5px;font-weight:700;color:#FFFFFF;">
+                        "{{ $siteSettings['motto'] ?? 'Unity, Integrity, and Academic Excellence in Motion.' }}"
                     </div>
                 </div>
             </div>
-            <div class="text-xs" style="color:#8F99A8;margin-top:14px;">Bcrypt hashed passwords · CSRF · Session regeneration · Rate limiting</div>
+
+            <div class="text-xs" style="color:#9BA5B4;border-top:1px solid rgba(255,255,255,0.1);padding-top:12px;">
+                Need account assistance? Contact SONIT Secretariat at <strong style="color:#FFFFFF;">{{ $siteSettings['email'] ?? 'office@sonit.nit.ac.tz' }}</strong>
+            </div>
         </div>
 
-        <div class="card card-accent-blue" style="padding:24px;">
+        <div class="card card-accent-blue" style="padding:26px;">
             <div class="flex-center mb-3">
-                <div class="icon-3d-tile sm"><img src="{{ asset('images/icons/security.svg') }}" alt="Security"></div>
+                <div class="icon-3d-tile sm"><img src="{{ asset('images/icons/security.svg') }}" alt="Sign In"></div>
                 <div>
                     <h1 style="margin:0;font-size:21px;font-weight:800;color:var(--nit-black);">Sign In</h1>
-                    <p class="text-xs muted" style="margin:0;">Enter your NIT credentials</p>
+                    <p class="text-xs muted" style="margin:0;">Enter your NIT registration number or email</p>
                 </div>
             </div>
 
