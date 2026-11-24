@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Community;
 use App\Models\CommunityMessage;
 use App\Models\Course;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,9 +16,13 @@ class CommunityController extends Controller
 {
     public function index(Request $request): View
     {
-        $faculty = $request->query('faculty');
+        $user = $request->user()->load('course');
+
+        // Guarantee user is automatically enrolled in their course communities & general campus channels
+        $user->syncCourseCommunities();
+
+        $faculty = $user->isAdmin() ? $request->query('faculty') : null;
         $search = trim((string) $request->query('q'));
-        $user = Auth::user();
 
         $generalChannels = Community::withCount(['members', 'messages'])
             ->where('is_active', true)
@@ -26,11 +31,13 @@ class CommunityController extends Controller
             ->orderBy('name')
             ->get();
 
+        // Strict Course Isolation: Students & Class Reps ONLY see their own course communities!
         $defaultCourseCommunities = Community::with(['course', 'cr'])
             ->withCount(['members', 'messages'])
             ->where('is_active', true)
             ->where('type', 'course_default')
-            ->when($faculty, fn ($q) => $q->whereHas('course', fn ($cq) => $cq->where('faculty', $faculty)))
+            ->when(! $user->isAdmin(), fn ($q) => $q->where('course_id', $user->course_id ?: -1))
+            ->when($user->isAdmin() && $faculty, fn ($q) => $q->whereHas('course', fn ($cq) => $cq->where('faculty', $faculty)))
             ->when($search, function ($q) use ($search) {
                 $q->where(function ($inner) use ($search) {
                     $inner->where('name', 'like', "%{$search}%")
@@ -44,22 +51,21 @@ class CommunityController extends Controller
             ->withCount(['members', 'messages'])
             ->where('is_active', true)
             ->where('type', 'course_group')
-            ->when($faculty, fn ($q) => $q->whereHas('course', fn ($cq) => $cq->where('faculty', $faculty)))
+            ->when(! $user->isAdmin(), fn ($q) => $q->where('course_id', $user->course_id ?: -1))
+            ->when($user->isAdmin() && $faculty, fn ($q) => $q->whereHas('course', fn ($cq) => $cq->where('faculty', $faculty)))
             ->when($search, fn ($q) => $q->where('name', 'like', "%{$search}%"))
             ->latest()
             ->get();
 
-        $faculties = Course::where('is_active', true)->distinct()->orderBy('faculty')->pluck('faculty');
+        $faculties = $user->isAdmin()
+            ? Course::where('is_active', true)->distinct()->orderBy('faculty')->pluck('faculty')
+            : collect();
 
-        // Courses available to create a sub-community for:
-        // Super Admin / Admin -> all courses; Class Rep -> ONLY their own course!
         $creatableCourses = collect();
-        if ($user) {
-            if ($user->isAdmin()) {
-                $creatableCourses = Course::where('is_active', true)->orderBy('code')->get();
-            } elseif ($user->isClassRep() && $user->course_id) {
-                $creatableCourses = Course::where('id', $user->course_id)->get();
-            }
+        if ($user->isAdmin()) {
+            $creatableCourses = Course::where('is_active', true)->orderBy('code')->get();
+        } elseif ($user->isClassRep() && $user->course_id) {
+            $creatableCourses = Course::where('id', $user->course_id)->get();
         }
 
         return view('pages.communities.index', compact(
@@ -73,9 +79,28 @@ class CommunityController extends Controller
         ));
     }
 
-    public function show(Community $community): View
+    public function show(Request $request, Community $community): View
     {
-        abort_unless($community->is_active || (Auth::check() && Auth::user()->isAdmin()), 404);
+        $user = $request->user();
+
+        abort_unless($community->is_active || $user->isAdmin(), 404);
+        abort_unless(
+            $user->canAccessCommunity($community),
+            403,
+            'Access restricted: you can only view communities for your enrolled NIT course and general campus channels.'
+        );
+
+        // Ensure automatic membership in accessible community
+        if (! $community->hasMember($user)) {
+            $community->members()->syncWithoutDetaching([
+                $user->id => [
+                    'member_role' => $user->canModerateCommunity($community)
+                        ? ($user->isAdmin() ? 'admin' : 'cr')
+                        : 'member',
+                    'joined_at' => now(),
+                ],
+            ]);
+        }
 
         $community->load(['course', 'cr', 'creator']);
         $community->loadCount('members');
@@ -97,9 +122,8 @@ class CommunityController extends Controller
             ->take(40)
             ->get();
 
-        $user = Auth::user();
-        $isMember = $community->hasMember($user);
-        $canModerate = $user ? $user->canModerateCommunity($community) : false;
+        $isMember = true;
+        $canModerate = $user->canModerateCommunity($community);
 
         $relatedCourseGroups = $community->course_id
             ? Community::where('course_id', $community->course_id)
@@ -135,7 +159,6 @@ class CommunityController extends Controller
         ]);
 
         if ($user->isClassRep()) {
-            // Strict enforcement: Class Representatives can ONLY create sub-groups for THEIR OWN course!
             if ($data['type'] !== 'course_group') {
                 abort(403, 'Class Representatives can only create course sub-communities for their assigned course.');
             }
@@ -166,13 +189,28 @@ class CommunityController extends Controller
             'joined_at' => now(),
         ]);
 
+        // Automatically enroll all active students of that course into the newly created course sub-community
+        if ($community->course_id) {
+            $courseStudents = User::where('is_active', true)
+                ->where('course_id', $community->course_id)
+                ->where('id', '!=', $user->id)
+                ->pluck('id');
+
+            foreach ($courseStudents as $studentId) {
+                $community->members()->syncWithoutDetaching([
+                    $studentId => ['member_role' => 'member', 'joined_at' => now()],
+                ]);
+            }
+        }
+
         return redirect()->route('communities.show', $community)
-            ->with('success', "Community \"{$community->name}\" has been created.");
+            ->with('success', "Community \"{$community->name}\" has been created and course students were automatically enrolled.");
     }
 
     public function join(Request $request, Community $community): RedirectResponse
     {
         $user = $request->user();
+        abort_unless($user->canAccessCommunity($community), 403);
 
         $community->members()->syncWithoutDetaching([
             $user->id => [
@@ -188,7 +226,14 @@ class CommunityController extends Controller
 
     public function leave(Request $request, Community $community): RedirectResponse
     {
-        $community->members()->detach($request->user()->id);
+        $user = $request->user();
+        abort_unless($user->canAccessCommunity($community), 403);
+
+        if ($community->type === 'course_default' && (int) $community->course_id === (int) $user->course_id) {
+            return back()->with('info', 'Your official course community membership is automatic and cannot be left.');
+        }
+
+        $community->members()->detach($user->id);
 
         return back()->with('success', "You left {$community->name}.");
     }
@@ -196,6 +241,8 @@ class CommunityController extends Controller
     public function postMessage(Request $request, Community $community): RedirectResponse
     {
         $user = $request->user();
+
+        abort_unless($user->canAccessCommunity($community), 403, 'You cannot post in another course\'s community.');
 
         if ($community->is_locked && ! $user->canModerateCommunity($community)) {
             return back()->with('error', 'This channel is currently in announcement-only mode (CR & Admins only).');
@@ -207,7 +254,6 @@ class CommunityController extends Controller
             'attachment' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
         ]);
 
-        // Auto-enroll member when posting
         if (! $community->hasMember($user)) {
             $community->members()->attach($user->id, [
                 'member_role' => $user->canModerateCommunity($community) ? ($user->isAdmin() ? 'admin' : 'cr') : 'member',

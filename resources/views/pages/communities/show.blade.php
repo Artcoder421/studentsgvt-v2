@@ -26,15 +26,12 @@
                     </form>
                 @endif
 
-                @if($isMember)
+                @if($community->type === 'course_default' && (int)$community->course_id === (int)auth()->user()->course_id)
+                    <span class="badge badge-emerald">Automatic Course Member</span>
+                @elseif($isMember)
                     <form method="POST" action="{{ route('communities.leave', $community) }}" style="margin:0;">
                         @csrf
                         <button type="submit" class="btn btn-ghost-light btn-sm">Leave Channel</button>
-                    </form>
-                @else
-                    <form method="POST" action="{{ route('communities.join', $community) }}" style="margin:0;">
-                        @csrf
-                        <button type="submit" class="btn btn-gold btn-sm">Join Channel</button>
                     </form>
                 @endif
             @endauth

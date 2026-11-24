@@ -110,6 +110,55 @@ class User extends Authenticatable
         return $this->role === self::ROLE_CLASS_REP;
     }
 
+    public function canAccessCommunity(Community $community): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        if ($community->type === 'general') {
+            return true;
+        }
+
+        return $community->course_id !== null
+            && $this->course_id !== null
+            && (int) $community->course_id === (int) $this->course_id;
+    }
+
+    public function syncCourseCommunities(): void
+    {
+        $now = now();
+
+        if ($this->course_id) {
+            $courseCommunities = Community::where('is_active', true)
+                ->where('course_id', $this->course_id)
+                ->get();
+
+            foreach ($courseCommunities as $comm) {
+                $memberRole = $this->isAdmin()
+                    ? 'admin'
+                    : (($this->isClassRep() || (int) $comm->cr_user_id === (int) $this->id) ? 'cr' : 'member');
+
+                $comm->members()->syncWithoutDetaching([
+                    $this->id => ['member_role' => $memberRole, 'joined_at' => $now],
+                ]);
+            }
+        }
+
+        $generalCommunities = Community::where('is_active', true)
+            ->where('type', 'general')
+            ->get();
+
+        foreach ($generalCommunities as $gen) {
+            $gen->members()->syncWithoutDetaching([
+                $this->id => [
+                    'member_role' => $this->isAdmin() ? 'admin' : 'member',
+                    'joined_at' => $now,
+                ],
+            ]);
+        }
+    }
+
     public function canCreateCommunityForCourse(?int $courseId): bool
     {
         if ($this->isAdmin()) {

@@ -19,10 +19,6 @@ Route::get('/leadership', [HomeController::class, 'leadership'])->name('leadersh
 Route::get('/announcements', [AnnouncementController::class, 'index'])->name('announcements.index');
 Route::get('/announcements/{announcement:slug}', [AnnouncementController::class, 'show'])->name('announcements.show');
 
-// Communities (Public directory preview; channel interaction requires auth)
-Route::get('/communities', [CommunityController::class, 'index'])->name('communities.index');
-Route::get('/communities/{community:slug}', [CommunityController::class, 'show'])->name('communities.show');
-
 // Elections (Public overview & published results; ballot & nominations require auth)
 Route::get('/elections', [ElectionController::class, 'index'])->name('elections.index');
 Route::get('/elections/results', [ElectionController::class, 'results'])->name('elections.results');
@@ -58,8 +54,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/announcements/mark-all-read', [AnnouncementController::class, 'markAllRead'])->name('announcements.mark-all-read');
     Route::post('/announcements/{announcement:slug}/comment', [AnnouncementController::class, 'comment'])->name('announcements.comment');
 
-    // Communities interactions (CR course-scoping & Admin moderation enforced in controller)
+    // Communities (Strictly authenticated; students/CRs only see their own course & general channels)
+    Route::get('/communities', [CommunityController::class, 'index'])->name('communities.index');
     Route::post('/communities', [CommunityController::class, 'store'])->name('communities.store');
+    Route::get('/communities/{community:slug}', [CommunityController::class, 'show'])->name('communities.show');
     Route::post('/communities/{community:slug}/join', [CommunityController::class, 'join'])->name('communities.join');
     Route::post('/communities/{community:slug}/leave', [CommunityController::class, 'leave'])->name('communities.leave');
     Route::post('/communities/{community:slug}/messages', [CommunityController::class, 'postMessage'])->name('communities.messages.store');

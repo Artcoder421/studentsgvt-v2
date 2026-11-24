@@ -33,7 +33,6 @@ class SonitPortalTest extends TestCase
             '/',
             '/leadership',
             '/announcements',
-            '/communities',
             '/elections',
             '/elections/results',
             '/venues',
@@ -51,6 +50,10 @@ class SonitPortalTest extends TestCase
             $response = $this->get($uri);
             $response->assertStatus(200);
         }
+
+        // Logged-out users CANNOT see inside communities
+        $this->get('/communities')->assertRedirect('/login');
+        $this->get('/communities/bltm-official')->assertRedirect('/login');
 
         $home = $this->get('/');
         $home->assertSee('SONIT 2026/2027 General Elections — Online Ballot Closes Soon');
@@ -176,6 +179,39 @@ class SonitPortalTest extends TestCase
 
         $this->actingAs($admin)->post("/communities/{$bameComm->slug}/toggle-lock")->assertRedirect();
         $this->assertTrue($bameComm->fresh()->is_locked);
+    }
+
+    public function test_students_are_automatically_in_own_course_communities_and_cannot_see_other_courses(): void
+    {
+        $bltmStudent = User::where('reg_no', 'NIT/BLTM/2023/7658')->firstOrFail();
+        $bitStudent = User::where('reg_no', 'NIT/BIT/2023/5012')->firstOrFail();
+        $bltmComm = Community::where('slug', 'bltm-official')->firstOrFail();
+        $bitComm = Community::where('slug', 'bit-official')->firstOrFail();
+        $bameComm = Community::where('slug', 'bame-official')->firstOrFail();
+
+        // BLTM student visits /communities: sees BLTM, NEVER sees BIT or BAME
+        $list = $this->actingAs($bltmStudent)->get('/communities');
+        $list->assertStatus(200);
+        $list->assertSee('BLTM Official Course Community');
+        $list->assertDontSee('BIT Official Course Community');
+        $list->assertDontSee('BAME Official Course Community');
+
+        // Automatically enrolled in BLTM official community
+        $this->assertTrue($bltmComm->hasMember($bltmStudent));
+
+        // BLTM student can open BLTM community, CANNOT open or message BIT or BAME communities
+        $this->actingAs($bltmStudent)->get("/communities/{$bltmComm->slug}")->assertStatus(200);
+        $this->actingAs($bltmStudent)->get("/communities/{$bitComm->slug}")->assertStatus(403);
+        $this->actingAs($bltmStudent)->get("/communities/{$bameComm->slug}")->assertStatus(403);
+        $this->actingAs($bltmStudent)->post("/communities/{$bitComm->slug}/messages", [
+            'body' => 'Should be blocked',
+        ])->assertStatus(403);
+
+        // BIT student sees BIT, never sees BLTM
+        $this->actingAs($bitStudent)->get('/communities')
+            ->assertSee('BIT Official Course Community')
+            ->assertDontSee('BLTM Official Course Community');
+        $this->actingAs($bitStudent)->get("/communities/{$bltmComm->slug}")->assertStatus(403);
     }
 
     public function test_elections_voting_prevents_duplicates_enforces_course_scope_and_respects_toggle(): void

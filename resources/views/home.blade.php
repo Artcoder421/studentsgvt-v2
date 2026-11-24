@@ -213,27 +213,46 @@
                 </div>
             </div>
 
-            {{-- Tab 4: NIT Course Communities Preview --}}
+            {{-- Tab 4: NIT Programmes / My Course Channel --}}
             <div class="tab-panel" data-tab-panel="courses">
-                <div class="grid grid-4">
-                    @foreach($coursesPreview as $course)
-                        @php $comm = $course->defaultCommunity; @endphp
-                        <div class="card" style="padding:12px;">
-                            <div class="flex-between mb-1">
-                                <span class="badge badge-black mono">{{ $course->code }}</span>
-                                <span class="text-xs muted">{{ $course->levelLabel() }}</span>
+                @auth
+                    <div class="grid grid-4">
+                        @foreach($coursesPreview as $course)
+                            @php $comm = $course->defaultCommunity; @endphp
+                            <div class="card" style="padding:12px;">
+                                <div class="flex-between mb-1">
+                                    <span class="badge badge-black mono">{{ $course->code }}</span>
+                                    <span class="text-xs muted">{{ $course->levelLabel() }}</span>
+                                </div>
+                                <strong style="font-size:13px;color:var(--nit-black);display:block;margin-bottom:6px;">{{ \Illuminate\Support\Str::limit($course->name, 52) }}</strong>
+                                <div class="text-xs mb-2" style="color:{{ ($comm && $comm->cr) ? 'var(--emerald-700)' : 'var(--nit-red-dark)' }};font-weight:700;">
+                                    {{ ($comm && $comm->cr) ? 'CR: '.$comm->cr->name : 'CR Vacant · Admin Managed' }}
+                                </div>
+                                @if($comm)
+                                    <a href="{{ route('communities.show', $comm) }}" class="btn btn-primary btn-sm" style="width:100%;">Open Channel</a>
+                                @endif
                             </div>
-                            <strong style="font-size:13px;color:var(--nit-black);display:block;margin-bottom:6px;">{{ \Illuminate\Support\Str::limit($course->name, 52) }}</strong>
-                            <div class="text-xs mb-2" style="color:{{ ($comm && $comm->cr) ? 'var(--emerald-700)' : 'var(--nit-red-dark)' }};font-weight:700;">
-                                {{ ($comm && $comm->cr) ? 'CR: '.$comm->cr->name : 'CR Vacant · Admin Managed' }}
+                        @endforeach
+                    </div>
+                    <div class="mt-3"><a href="{{ route('communities.index') }}" class="btn btn-primary btn-sm">Open My Course Communities</a></div>
+                @else
+                    <div class="flash flash-info mb-3">
+                        <span>Course communities are private to enrolled NIT students. Sign in to automatically enter your course's official channel.</span>
+                        <a href="{{ route('login') }}" class="btn btn-primary btn-sm">Sign In</a>
+                    </div>
+                    <div class="grid grid-4">
+                        @foreach($coursesPreview as $course)
+                            <div class="card" style="padding:12px;">
+                                <div class="flex-between mb-1">
+                                    <span class="badge badge-black mono">{{ $course->code }}</span>
+                                    <span class="text-xs muted">{{ $course->levelLabel() }}</span>
+                                </div>
+                                <strong style="font-size:13px;color:var(--nit-black);display:block;margin-bottom:4px;">{{ \Illuminate\Support\Str::limit($course->name, 52) }}</strong>
+                                <div class="text-xs muted">{{ $course->faculty }}</div>
                             </div>
-                            @if($comm)
-                                <a href="{{ route('communities.show', $comm) }}" class="btn btn-outline btn-sm" style="width:100%;">Open Channel</a>
-                            @endif
-                        </div>
-                    @endforeach
-                </div>
-                <div class="mt-3"><a href="{{ route('communities.index') }}" class="btn btn-primary btn-sm">Explore All {{ $stats['courses'] }} Course Communities</a></div>
+                        @endforeach
+                    </div>
+                @endauth
             </div>
         </div>
     </div>

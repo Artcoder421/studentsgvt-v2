@@ -87,6 +87,8 @@ class AdminDashboardController extends Controller
             'is_active' => $request->has('is_active') ? $request->boolean('is_active') : $user->is_active,
         ]);
 
+        $user->syncCourseCommunities();
+
         // If promoted to class_rep and has a course, assign their default course community CR seat if currently vacant
         if ($user->role === User::ROLE_CLASS_REP && $user->course_id) {
             $defaultCommunity = Community::where('type', 'course_default')

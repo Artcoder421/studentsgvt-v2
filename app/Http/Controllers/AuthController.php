@@ -62,6 +62,7 @@ class AuthController extends Controller
         RateLimiter::clear($throttleKey);
         Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
+        $user->syncCourseCommunities();
 
         if ($user->isAdmin()) {
             return redirect()->intended(route('admin.dashboard'))
@@ -107,29 +108,14 @@ class AuthController extends Controller
             'is_active' => true,
         ]);
 
-        // Auto-join default course community & General Campus Square
-        $defaultCommunity = Community::where('type', 'course_default')
-            ->where('course_id', $user->course_id)
-            ->first();
-
-        if ($defaultCommunity) {
-            $defaultCommunity->members()->syncWithoutDetaching([
-                $user->id => ['member_role' => 'member', 'joined_at' => now()],
-            ]);
-        }
-
-        $generalSquare = Community::where('slug', 'general-campus-square')->first();
-        if ($generalSquare) {
-            $generalSquare->members()->syncWithoutDetaching([
-                $user->id => ['member_role' => 'member', 'joined_at' => now()],
-            ]);
-        }
+        // Automatically enroll student into their course communities & general channels
+        $user->syncCourseCommunities();
 
         Auth::login($user);
         $request->session()->regenerate();
 
         return redirect()->route('dashboard')
-            ->with('success', 'Your SONIT student account is active and you have been joined to your course community.');
+            ->with('success', 'Your SONIT student account is active and you have been automatically placed in your course community.');
     }
 
     public function logout(Request $request): RedirectResponse

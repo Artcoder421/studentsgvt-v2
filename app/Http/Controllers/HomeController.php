@@ -46,7 +46,11 @@ class HomeController extends Controller
             ->latest()
             ->first();
 
-        $coursesPreview = Course::with(['defaultCommunity.cr'])
+        $user = Auth::user();
+
+        $coursesPreview = Course::query()
+            ->when($user && $user->isAdmin(), fn ($q) => $q->with(['defaultCommunity.cr']))
+            ->when($user && ! $user->isAdmin(), fn ($q) => $q->with(['defaultCommunity.cr'])->where('id', $user->course_id ?: -1))
             ->where('is_active', true)
             ->orderBy('level')
             ->orderBy('code')
@@ -76,6 +80,7 @@ class HomeController extends Controller
     public function dashboard(): View
     {
         $user = Auth::user()->load('course');
+        $user->syncCourseCommunities();
 
         $myCourseCommunities = Community::with(['course', 'cr'])
             ->withCount(['members', 'messages'])
