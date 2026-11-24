@@ -52,6 +52,7 @@ class TimerAnnouncement extends Model
                 $q->whereNull('starts_at')->orWhere('starts_at', '<=', $now);
             })
             ->where('ends_at', '>', $now)
+            ->orderByRaw("CASE WHEN category = 'election' THEN 0 ELSE 1 END")
             ->orderByDesc('priority')
             ->orderBy('ends_at');
     }

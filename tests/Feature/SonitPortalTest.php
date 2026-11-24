@@ -53,7 +53,8 @@ class SonitPortalTest extends TestCase
         }
 
         $home = $this->get('/');
-        $home->assertSee('SONIT Annual Mabibo Orphanage & Charity Tour');
+        $home->assertSee('SONIT 2026/2027 General Elections — Online Ballot Closes Soon');
+        $home->assertSee('Mabibo Orphanage & Community Charity Tour');
         $home->assertSee('images/nit_logo_badge.png');
         $home->assertSee('images/portraits/rector.jpg');
         $home->assertSee('images/portraits/president.jpg');
@@ -218,6 +219,10 @@ class SonitPortalTest extends TestCase
         ])->assertRedirect('/elections');
         $this->assertDatabaseCount('votes', 2);
 
+        // While election is active, top countdown strip prioritizes the Election countdown over Charity Tour
+        $this->get('/')
+            ->assertSee('SONIT 2026/2027 General Elections — Online Ballot Closes Soon');
+
         // Admin ends election immediately EVEN WHILE voting_ends_at countdown is still days in the future!
         $admin = User::where('email', 'admin@sonit.nit.ac.tz')->firstOrFail();
         $election->update(['voting_ends_at' => now()->addDays(4)]);
@@ -227,8 +232,11 @@ class SonitPortalTest extends TestCase
         $this->assertTrue($election->fresh()->isEnded());
         $this->assertFalse($election->fresh()->isVotingActive());
 
-        // Election countdown timer is automatically deactivated
+        // Election countdown timer is automatically deactivated and Charity Tour takes top countdown strip
         $this->assertEquals(0, TimerAnnouncement::where('category', 'election')->where('is_active', true)->count());
+        $this->get('/')
+            ->assertDontSee('SONIT 2026/2027 General Elections — Online Ballot Closes Soon')
+            ->assertSee('SONIT Annual Mabibo Orphanage & Charity Tour');
 
         // Student can no longer vote even though scheduled voting_ends_at is still in the future
         $otherStudent = User::where('reg_no', 'NIT/BIT/2023/5012')->firstOrFail();
