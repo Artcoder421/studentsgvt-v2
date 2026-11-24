@@ -459,4 +459,189 @@ class SonitPortalTest extends TestCase
             ->assertSee('election_ended')
             ->assertSee('candidate_deleted');
     }
+
+    public function test_student_profile_avatars_in_community_chat_and_admin_full_edit_delete_everything(): void
+    {
+        $student = User::where('reg_no', 'NIT/BLTM/2023/7658')->firstOrFail();
+        $admin = User::where('email', 'admin@sonit.nit.ac.tz')->firstOrFail();
+        $bltmComm = Community::where('slug', 'bltm-official')->firstOrFail();
+
+        // Verify all admin consoles load cleanly (200 OK)
+        foreach (['/admin/users', '/admin/courses', '/admin/timers', '/admin/announcements', '/admin/elections', '/admin/services', '/admin/campus-life', '/admin/settings', '/admin/logs'] as $adminUrl) {
+            $this->actingAs($admin)->get($adminUrl)->assertStatus(200);
+        }
+
+        // 1. Student uploads profile photo -> posts in Community Chat -> photo renders in Community Chat & Sidebar
+        $fakeAvatar = \Illuminate\Http\UploadedFile::fake()->image('student_avatar.jpg', 200, 200);
+        $this->actingAs($student)->post('/profile', [
+            'name' => $student->name,
+            'phone' => '+255 755 111 222',
+            'academic_level' => 'Second Year',
+            'bio' => 'NIT Logistics Student',
+            'avatar' => $fakeAvatar,
+        ])->assertRedirect();
+
+        $avatarPath = $student->fresh()->avatar;
+        $this->assertNotNull($avatarPath);
+        $this->assertStringStartsWith('uploads/avatars/', $avatarPath);
+
+        $this->actingAs($student)->post("/communities/{$bltmComm->slug}/messages", [
+            'body' => 'Hello BLTM classmates, testing my profile photo in chat!',
+        ])->assertRedirect();
+
+        $chatPage = $this->actingAs($student)->get("/communities/{$bltmComm->slug}");
+        $chatPage->assertStatus(200)
+            ->assertSee('Hello BLTM classmates, testing my profile photo in chat!')
+            ->assertSee($avatarPath);
+
+        // 2. Admin removes student's profile photo
+        $this->actingAs($admin)->post("/admin/users/{$student->id}/remove-avatar")->assertRedirect();
+        $this->assertNull($student->fresh()->avatar);
+        $this->assertFileDoesNotExist(public_path($avatarPath));
+
+        // 3. Admin edits student name/title and deletes a throwaway user
+        $this->actingAs($admin)->put("/admin/users/{$student->id}", [
+            'name' => 'Hawa Hemed Updated',
+            'reg_no' => $student->reg_no,
+            'email' => $student->email,
+            'course_id' => $student->course_id,
+            'sonit_title' => 'BLTM Welfare Coordinator',
+            'is_active' => 1,
+        ])->assertRedirect();
+        $this->assertEquals('Hawa Hemed Updated', $student->fresh()->name);
+        $this->assertEquals('BLTM Welfare Coordinator', $student->fresh()->sonit_title);
+
+        $tempUser = User::create([
+            'name' => 'Temp Student DeleteMe',
+            'email' => 'temp.delete@student.nit.ac.tz',
+            'reg_no' => 'NIT/TEMP/2026/0001',
+            'password' => bcrypt('TempPass@2026'),
+            'role' => User::ROLE_STUDENT,
+            'is_active' => true,
+        ]);
+        $this->actingAs($admin)->delete("/admin/users/{$tempUser->id}")->assertRedirect();
+        $this->assertDatabaseMissing('users', ['id' => $tempUser->id]);
+
+        // 4. Admin edits Leader name, removes Leader photo, and deletes a Leader
+        $leader = \App\Models\Leader::firstOrFail();
+        $this->actingAs($admin)->put("/admin/leaders/{$leader->id}", [
+            'name' => 'Dr. Updated Leader Name',
+            'position' => $leader->position,
+            'category' => $leader->category,
+            'remove_photo' => 1,
+        ])->assertRedirect();
+        $this->assertEquals('Dr. Updated Leader Name', $leader->fresh()->name);
+        $this->assertNull($leader->fresh()->photo);
+
+        $tempLeader = \App\Models\Leader::create([
+            'name' => 'Temp Leader',
+            'position' => 'Temporary Chair',
+            'category' => 'ministry',
+            'is_active' => true,
+        ]);
+        $this->actingAs($admin)->delete("/admin/leaders/{$tempLeader->id}")->assertRedirect();
+        $this->assertDatabaseMissing('leaders', ['id' => $tempLeader->id]);
+
+        // 5. Admin edits & deletes Announcements, Timers, Courses, Venues, Accommodations, Events, Sports, Charity, Tickets, Lost & Found
+        $ann = Announcement::firstOrFail();
+        $this->actingAs($admin)->put("/admin/announcements/{$ann->id}", [
+            'title' => 'Updated Announcement Headline',
+            'category' => 'academic',
+            'content' => 'Updated full circular details.',
+        ])->assertRedirect();
+        $this->assertEquals('Updated Announcement Headline', $ann->fresh()->title);
+
+        $timer = TimerAnnouncement::firstOrFail();
+        $this->actingAs($admin)->put("/admin/timers/{$timer->id}", [
+            'title' => 'Updated Countdown Banner Title',
+            'category' => $timer->category,
+            'ends_at' => now()->addDays(5)->format('Y-m-d H:i:s'),
+        ])->assertRedirect();
+        $this->assertEquals('Updated Countdown Banner Title', $timer->fresh()->title);
+
+        $course = Course::where('code', 'BAME')->firstOrFail();
+        $this->actingAs($admin)->put("/admin/courses/{$course->id}", [
+            'code' => 'BAME',
+            'name' => 'Bachelor of Aircraft Maintenance Engineering (Updated)',
+            'level' => 'bachelor',
+            'faculty' => $course->faculty,
+            'duration_years' => 4,
+        ])->assertRedirect();
+        $this->assertEquals('Bachelor of Aircraft Maintenance Engineering (Updated)', $course->fresh()->name);
+
+        $venue = Venue::firstOrFail();
+        $this->actingAs($admin)->put("/admin/venues/{$venue->id}", [
+            'name' => 'Updated Main Auditorium',
+            'code' => $venue->code,
+            'building' => $venue->building,
+            'capacity' => 500,
+            'category' => 'auditorium',
+            'status' => 'available',
+        ])->assertRedirect();
+        $this->assertEquals('Updated Main Auditorium', $venue->fresh()->name);
+
+        $acc = \App\Models\Accommodation::firstOrFail();
+        $this->actingAs($admin)->put("/admin/accommodations/{$acc->id}", [
+            'name' => 'Updated Mabibo Hostel',
+            'type' => $acc->type,
+            'gender_policy' => $acc->gender_policy,
+            'location' => $acc->location,
+            'price_per_semester' => 280000,
+            'available_rooms' => 12,
+            'total_rooms' => 50,
+        ])->assertRedirect();
+        $this->assertEquals('Updated Mabibo Hostel', $acc->fresh()->name);
+
+        $event = \App\Models\CampusEvent::firstOrFail();
+        $this->actingAs($admin)->put("/admin/events/{$event->id}", [
+            'title' => 'Updated Campus Summit',
+            'category' => 'academic',
+            'venue_name' => 'NIT Main Hall',
+            'starts_at' => now()->addDays(6)->format('Y-m-d H:i:s'),
+            'description' => 'Updated event details.',
+        ])->assertRedirect();
+        $this->assertEquals('Updated Campus Summit', $event->fresh()->title);
+
+        $sport = \App\Models\SportsActivity::firstOrFail();
+        $this->actingAs($admin)->put("/admin/sports/{$sport->id}", [
+            'name' => 'NIT FC Updated',
+            'sport_type' => 'football',
+            'schedule' => 'Tue & Fri 16:30',
+            'venue' => 'NIT Main Pitch',
+        ])->assertRedirect();
+        $this->assertEquals('NIT FC Updated', $sport->fresh()->name);
+
+        $charity = CharityCampaign::firstOrFail();
+        $this->actingAs($admin)->put("/admin/charity/{$charity->id}", [
+            'title' => 'Updated Mabibo Charity Tour',
+            'beneficiary' => 'Mabibo Children Home',
+            'description' => 'Updated charity notice description.',
+        ])->assertRedirect();
+        $this->assertEquals('Updated Mabibo Charity Tour', $charity->fresh()->title);
+
+        $election = Election::firstOrFail();
+        $this->actingAs($admin)->put("/admin/elections/{$election->id}", [
+            'title' => 'SONIT 2026/2027 General Elections (Updated)',
+            'academic_year' => '2026/2027',
+        ])->assertRedirect();
+        $this->assertEquals('SONIT 2026/2027 General Elections (Updated)', $election->fresh()->title);
+
+        // Delete verification across modules
+        $this->actingAs($admin)->delete("/admin/events/{$event->id}")->assertRedirect();
+        $this->assertDatabaseMissing('campus_events', ['id' => $event->id]);
+
+        $this->actingAs($admin)->delete("/admin/sports/{$sport->id}")->assertRedirect();
+        $this->assertDatabaseMissing('sports_activities', ['id' => $sport->id]);
+
+        $this->actingAs($admin)->delete("/admin/charity/{$charity->id}")->assertRedirect();
+        $this->assertDatabaseMissing('charity_campaigns', ['id' => $charity->id]);
+
+        $lost = \App\Models\LostFoundItem::firstOrFail();
+        $this->actingAs($admin)->delete("/admin/lost-found/{$lost->id}")->assertRedirect();
+        $this->assertDatabaseMissing('lost_found_items', ['id' => $lost->id]);
+
+        $ticket = HelpTicket::firstOrFail();
+        $this->actingAs($admin)->delete("/admin/help-tickets/{$ticket->id}")->assertRedirect();
+        $this->assertDatabaseMissing('help_tickets', ['id' => $ticket->id]);
+    }
 }

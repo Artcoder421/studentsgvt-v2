@@ -110,6 +110,83 @@ class AdminDashboardController extends Controller
         return back()->with('success', "Updated {$user->name}'s role to {$user->roleLabel()}.");
     }
 
+    public function updateUser(Request $request, User $user): RedirectResponse
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:120'],
+            'reg_no' => ['nullable', 'string', 'max:50', 'unique:users,reg_no,'.$user->id],
+            'email' => ['required', 'email', 'max:120', 'unique:users,email,'.$user->id],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'course_id' => ['nullable', 'exists:courses,id'],
+            'academic_level' => ['nullable', 'string', 'max:40'],
+            'sonit_title' => ['nullable', 'string', 'max:120'],
+            'is_active' => ['nullable', 'boolean'],
+            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'remove_avatar' => ['nullable', 'boolean'],
+        ]);
+
+        if ($request->boolean('remove_avatar')) {
+            if ($user->avatar && str_starts_with($user->avatar, 'uploads/') && file_exists(public_path($user->avatar))) {
+                @unlink(public_path($user->avatar));
+            }
+            $data['avatar'] = null;
+        } elseif ($request->hasFile('avatar')) {
+            if ($user->avatar && str_starts_with($user->avatar, 'uploads/') && file_exists(public_path($user->avatar))) {
+                @unlink(public_path($user->avatar));
+            }
+            $file = $request->file('avatar');
+            $filename = 'avatar_'.$user->id.'_'.time().'.'.$file->getClientOriginalExtension();
+            $file->move(public_path('uploads/avatars'), $filename);
+            $data['avatar'] = 'uploads/avatars/'.$filename;
+        } else {
+            unset($data['avatar']);
+        }
+
+        unset($data['remove_avatar']);
+        $data['is_active'] = $request->has('is_active') ? $request->boolean('is_active') : $user->is_active;
+
+        $user->update($data);
+        $user->syncCourseCommunities();
+
+        \App\Models\ActivityLog::record('users', 'user_updated', "Admin updated account details for {$user->name} ({$user->reg_no}).");
+
+        return back()->with('success', "Updated user {$user->name}.");
+    }
+
+    public function removeUserAvatar(User $user): RedirectResponse
+    {
+        if ($user->avatar && str_starts_with($user->avatar, 'uploads/') && file_exists(public_path($user->avatar))) {
+            @unlink(public_path($user->avatar));
+        }
+
+        $user->update(['avatar' => null]);
+
+        \App\Models\ActivityLog::record('users', 'avatar_removed', "Admin removed profile photo of {$user->name}.");
+
+        return back()->with('success', "Removed profile photo for {$user->name}.");
+    }
+
+    public function deleteUser(Request $request, User $user): RedirectResponse
+    {
+        if ((int) $user->id === (int) $request->user()->id) {
+            return back()->with('error', 'You cannot delete your own active admin account.');
+        }
+
+        if ($user->isSuperAdmin() && ! $request->user()->isSuperAdmin()) {
+            abort(403, 'Only a Super Admin can delete another Super Admin account.');
+        }
+
+        $name = $user->name;
+        if ($user->avatar && str_starts_with($user->avatar, 'uploads/') && file_exists(public_path($user->avatar))) {
+            @unlink(public_path($user->avatar));
+        }
+        $user->delete();
+
+        \App\Models\ActivityLog::record('users', 'user_deleted', "Admin deleted user account {$name}.");
+
+        return back()->with('success', "User {$name} has been deleted.");
+    }
+
     // --- COURSES & DEFAULT COMMUNITIES + CR SEAT MANAGEMENT ---
     public function courses(): View
     {
@@ -157,7 +234,38 @@ class AdminDashboardController extends Controller
             'is_active' => true,
         ]);
 
+        \App\Models\ActivityLog::record('courses', 'course_created', "Created course {$course->code} - {$course->name}.");
+
         return back()->with('success', "Course {$course->code} created along with its default Course Community.");
+    }
+
+    public function updateCourse(Request $request, Course $course): RedirectResponse
+    {
+        $data = $request->validate([
+            'code' => ['required', 'string', 'max:20', 'unique:courses,code,'.$course->id],
+            'name' => ['required', 'string', 'max:180'],
+            'level' => ['required', 'in:bachelor,diploma,certificate,masters'],
+            'faculty' => ['required', 'string', 'max:140'],
+            'duration_years' => ['required', 'integer', 'min:1', 'max:6'],
+            'description' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $course->update([...$data, 'code' => strtoupper($data['code'])]);
+
+        \App\Models\ActivityLog::record('courses', 'course_updated', "Updated course {$course->code} - {$course->name}.");
+
+        return back()->with('success', "Updated course {$course->code}.");
+    }
+
+    public function deleteCourse(Course $course): RedirectResponse
+    {
+        $code = $course->code;
+        $course->communities()->delete();
+        $course->delete();
+
+        \App\Models\ActivityLog::record('courses', 'course_deleted', "Deleted course {$code}.");
+
+        return back()->with('success', "Course {$code} deleted.");
     }
 
     public function assignCourseCr(Request $request, Course $course): RedirectResponse
@@ -190,10 +298,14 @@ class AdminDashboardController extends Controller
                 $crUser->id => ['member_role' => 'cr', 'joined_at' => now()],
             ]);
 
+            \App\Models\ActivityLog::record('courses', 'cr_assigned', "Assigned {$crUser->name} as CR for {$course->code}.");
+
             return back()->with('success', "Assigned {$crUser->name} as Class Representative for {$course->code}.");
         }
 
         $community->update(['cr_user_id' => null]);
+
+        \App\Models\ActivityLog::record('courses', 'cr_vacated', "Vacated CR seat for {$course->code} (Admin managed).");
 
         return back()->with('success', "CR seat for {$course->code} vacated. SONIT Admins retain full governance of the channel.");
     }
@@ -218,6 +330,7 @@ class AdminDashboardController extends Controller
         }
 
         SiteSetting::clearCache();
+        \App\Models\ActivityLog::record('settings', 'settings_updated', 'Updated SONIT Motto, Vision, Mission, and portal settings.');
 
         return back()->with('success', 'Organization Motto, Vision, Mission, and Portal Settings updated live.');
     }
@@ -258,7 +371,31 @@ class AdminDashboardController extends Controller
             'created_by' => $request->user()->id,
         ]);
 
+        \App\Models\ActivityLog::record('timers', 'timer_created', "Published countdown notice: {$data['title']}.");
+
         return back()->with('success', 'Countdown Timer Announcement published to the top of the homepage.');
+    }
+
+    public function updateTimer(Request $request, TimerAnnouncement $timer): RedirectResponse
+    {
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:160'],
+            'category' => ['required', 'in:charity,election,event,deadline,urgent'],
+            'ends_at' => ['required', 'date'],
+            'event_when' => ['nullable', 'string', 'max:140'],
+            'event_where' => ['nullable', 'string', 'max:180'],
+            'planned_activities' => ['nullable', 'string', 'max:1200'],
+            'account_number' => ['nullable', 'string', 'max:180'],
+            'contact_info' => ['nullable', 'string', 'max:180'],
+            'cta_label' => ['nullable', 'string', 'max:50'],
+            'cta_url' => ['nullable', 'string', 'max:200'],
+            'priority' => ['nullable', 'integer', 'min:0', 'max:100'],
+        ]);
+
+        $timer->update($data);
+        \App\Models\ActivityLog::record('timers', 'timer_updated', "Updated countdown notice: {$timer->title}.");
+
+        return back()->with('success', 'Countdown notice updated.');
     }
 
     public function toggleTimer(TimerAnnouncement $timer): RedirectResponse

@@ -154,9 +154,18 @@ class AuthController extends Controller
             'academic_level' => ['nullable', 'string', 'max:40'],
             'bio' => ['nullable', 'string', 'max:500'],
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'remove_avatar' => ['nullable', 'boolean'],
         ]);
 
-        if ($request->hasFile('avatar')) {
+        if ($request->boolean('remove_avatar')) {
+            if ($user->avatar && str_starts_with($user->avatar, 'uploads/') && file_exists(public_path($user->avatar))) {
+                @unlink(public_path($user->avatar));
+            }
+            $data['avatar'] = null;
+        } elseif ($request->hasFile('avatar')) {
+            if ($user->avatar && str_starts_with($user->avatar, 'uploads/') && file_exists(public_path($user->avatar))) {
+                @unlink(public_path($user->avatar));
+            }
             $file = $request->file('avatar');
             $filename = 'avatar_'.$user->id.'_'.time().'.'.$file->getClientOriginalExtension();
             $file->move(public_path('uploads/avatars'), $filename);
@@ -165,7 +174,10 @@ class AuthController extends Controller
             unset($data['avatar']);
         }
 
+        unset($data['remove_avatar']);
         $user->update($data);
+
+        \App\Models\ActivityLog::record('profile', 'profile_updated', "Updated personal profile / avatar.", $user);
 
         return back()->with('success', 'Profile updated successfully.');
     }

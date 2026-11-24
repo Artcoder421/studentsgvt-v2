@@ -55,6 +55,41 @@
             </div>
             <button type="submit" class="btn btn-black btn-sm">Save Flags</button>
         </form>
+
+        <div class="flex-between flex-wrap mt-2" style="gap:8px;border-top:1px solid var(--border);padding-top:10px;">
+            <details class="admin-details" style="flex:1;">
+                <summary>Edit Election Title, Year & Countdown End Date</summary>
+                <form method="POST" action="{{ route('admin.elections.update', $activeElection) }}" class="admin-details-body">
+                    @csrf
+                    @method('PUT')
+                    <div class="grid grid-3" style="gap:8px;">
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">Election Title</label>
+                            <input type="text" name="title" value="{{ $activeElection->title }}" class="form-control" required>
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">Academic Year</label>
+                            <input type="text" name="academic_year" value="{{ $activeElection->academic_year }}" class="form-control" required>
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">Voting Ends At</label>
+                            <input type="datetime-local" name="voting_ends_at" value="{{ $activeElection->voting_ends_at ? $activeElection->voting_ends_at->format('Y-m-d\TH:i') : '' }}" class="form-control">
+                        </div>
+                    </div>
+                    <div class="form-group mt-2" style="margin-bottom:8px;">
+                        <label class="form-label">Description</label>
+                        <input type="text" name="description" value="{{ $activeElection->description }}" class="form-control">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">Save Election Details</button>
+                </form>
+            </details>
+
+            <form method="POST" action="{{ route('admin.elections.delete', $activeElection) }}" style="margin:0;" onsubmit="return confirm('Delete election cycle {{ $activeElection->title }} permanently?');">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn btn-danger btn-sm">Delete Election</button>
+            </form>
+        </div>
     </div>
 @endif
 
@@ -70,6 +105,8 @@
                     <div class="flex-center">
                         @if($c->photo)
                             <img src="{{ asset($c->photo) }}" alt="{{ $c->fullname }}" style="width:42px;height:48px;object-fit:cover;object-position:top;border-radius:2px;border:1px solid var(--border);">
+                        @else
+                            <div class="avatar-tile avatar-fallback" style="width:42px;height:48px;">{{ strtoupper(substr($c->fullname, 0, 2)) }}</div>
                         @endif
                         <div>
                             <strong style="font-size:15px;color:var(--nit-black);">{{ $c->fullname }}</strong>
@@ -96,11 +133,9 @@
                 </div>
 
                 {{-- Inline Edit Form for Name, Details, Fee & Interview --}}
-                <details>
-                    <summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--nit-blue-dark);padding:4px 0;">
-                        Edit Contestant Name, Photo, Fee Payment & Interview Result
-                    </summary>
-                    <form method="POST" action="{{ route('admin.candidates.update', $c) }}" enctype="multipart/form-data" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);background:#fff;padding:12px;">
+                <details class="admin-details">
+                    <summary>Edit Contestant Name, Photo, Fee Payment & Interview Result</summary>
+                    <form method="POST" action="{{ route('admin.candidates.update', $c) }}" enctype="multipart/form-data" class="admin-details-body">
                         @csrf
                         @method('PUT')
                         <div class="grid grid-3" style="gap:10px;">
@@ -136,6 +171,12 @@
                                 <input type="file" name="photo" accept="image/*" class="form-control">
                             </div>
                         </div>
+
+                        @if($c->photo)
+                            <label class="flex-center text-xs mt-2" style="gap:6px;color:var(--nit-red-dark);font-weight:700;cursor:pointer;">
+                                <input type="checkbox" name="remove_photo" value="1"> Remove current contestant photo
+                            </label>
+                        @endif
 
                         <div class="grid grid-3 mt-2" style="gap:10px;">
                             <div class="form-group" style="margin:0;">

@@ -979,6 +979,79 @@ table.sonit-table tr:last-child td { border-bottom: none; }
     margin-bottom: 6px;
 }
 
+.chat-msg-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+}
+
+.chat-msg-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.avatar-tile {
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+    object-position: top;
+    border: 1px solid var(--border);
+    flex-shrink: 0;
+    background: var(--nit-black);
+}
+
+.avatar-tile.sm {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+}
+
+.avatar-tile.lg {
+    width: 72px;
+    height: 72px;
+    font-size: 24px;
+}
+
+.avatar-fallback {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--nit-black);
+    color: #FFFFFF;
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    border: 1px solid var(--nit-blue);
+}
+
+.avatar-fallback.is-admin {
+    background: var(--nit-red);
+    border-color: var(--nit-red-dark);
+}
+
+.avatar-fallback.is-cr {
+    background: var(--nit-blue-dark);
+    border-color: var(--nit-blue);
+}
+
+.admin-details summary {
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--nit-blue-dark);
+    padding: 4px 0;
+    user-select: none;
+}
+
+.admin-details-body {
+    margin-top: 8px;
+    padding: 12px;
+    background: #FFFFFF;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--nit-blue);
+}
+
 /* ---------- Admin Command Center Layout ---------- */
 .admin-shell {
     display: grid;

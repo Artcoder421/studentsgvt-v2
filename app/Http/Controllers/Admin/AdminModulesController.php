@@ -69,9 +69,55 @@ class AdminModulesController extends Controller
         return back()->with('success', 'Announcement published and student notification badges updated.');
     }
 
+    protected function safeRemoveUpload(?string $path): void
+    {
+        if ($path && str_starts_with($path, 'uploads/') && file_exists(public_path($path))) {
+            @unlink(public_path($path));
+        }
+    }
+
+    public function updateAnnouncement(Request $request, Announcement $announcement): RedirectResponse
+    {
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:200'],
+            'excerpt' => ['nullable', 'string', 'max:400'],
+            'content' => ['required', 'string'],
+            'category' => ['required', 'in:general,academic,welfare,election,sports,charity,urgent'],
+            'is_urgent' => ['nullable', 'boolean'],
+            'is_pinned' => ['nullable', 'boolean'],
+            'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
+            'remove_image' => ['nullable', 'boolean'],
+        ]);
+
+        if ($request->boolean('remove_image')) {
+            $this->safeRemoveUpload($announcement->cover_image);
+            $data['cover_image'] = null;
+        } elseif ($request->hasFile('cover_image')) {
+            $this->safeRemoveUpload($announcement->cover_image);
+            $file = $request->file('cover_image');
+            $filename = 'ann_'.time().'_'.Str::random(4).'.'.$file->getClientOriginalExtension();
+            $file->move(public_path('uploads/announcements'), $filename);
+            $data['cover_image'] = 'uploads/announcements/'.$filename;
+        } else {
+            unset($data['cover_image']);
+        }
+
+        unset($data['remove_image']);
+        $data['is_urgent'] = $request->boolean('is_urgent');
+        $data['is_pinned'] = $request->boolean('is_pinned');
+
+        $announcement->update($data);
+        \App\Models\ActivityLog::record('announcements', 'announcement_updated', "Updated announcement: {$announcement->title}.");
+
+        return back()->with('success', 'Announcement updated.');
+    }
+
     public function deleteAnnouncement(Announcement $announcement): RedirectResponse
     {
+        $title = $announcement->title;
+        $this->safeRemoveUpload($announcement->cover_image);
         $announcement->delete();
+        \App\Models\ActivityLog::record('announcements', 'announcement_deleted', "Deleted announcement: {$title}.");
 
         return back()->with('success', 'Announcement deleted.');
     }
@@ -333,9 +379,14 @@ class AdminModulesController extends Controller
             'interview_date' => ['nullable', 'string', 'max:100'],
             'interview_notes' => ['nullable', 'string', 'max:1000'],
             'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'remove_photo' => ['nullable', 'boolean'],
         ]);
 
-        if ($request->hasFile('photo')) {
+        if ($request->boolean('remove_photo')) {
+            $this->safeRemoveUpload($candidate->photo);
+            $data['photo'] = null;
+        } elseif ($request->hasFile('photo')) {
+            $this->safeRemoveUpload($candidate->photo);
             $file = $request->file('photo');
             $filename = 'cand_edit_'.$candidate->id.'_'.time().'.'.$file->getClientOriginalExtension();
             $file->move(public_path('uploads/candidates'), $filename);
@@ -343,6 +394,8 @@ class AdminModulesController extends Controller
         } else {
             unset($data['photo']);
         }
+
+        unset($data['remove_photo']);
 
         // Sync ballot eligibility status cleanly with interview outcome
         $data['status'] = match ($data['interview_status']) {
@@ -366,11 +419,36 @@ class AdminModulesController extends Controller
     {
         $name = $candidate->fullname;
         $pos = $candidate->position;
+        $this->safeRemoveUpload($candidate->photo);
         $candidate->delete();
 
         \App\Models\ActivityLog::record('elections', 'candidate_deleted', "Deleted contestant {$name} ({$pos}) from election.");
 
         return back()->with('success', "Contestant {$name} removed from the election.");
+    }
+
+    public function updateElection(Request $request, Election $election): RedirectResponse
+    {
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:180'],
+            'academic_year' => ['required', 'string', 'max:20'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'voting_ends_at' => ['nullable', 'date'],
+        ]);
+
+        $election->update($data);
+        \App\Models\ActivityLog::record('elections', 'election_updated', "Updated election details: {$election->title}.");
+
+        return back()->with('success', 'Election details updated.');
+    }
+
+    public function deleteElection(Election $election): RedirectResponse
+    {
+        $title = $election->title;
+        $election->delete();
+        \App\Models\ActivityLog::record('elections', 'election_deleted', "Deleted election cycle: {$title}.");
+
+        return back()->with('success', "Election cycle {$title} deleted.");
     }
 
     // --- CAMPUS SERVICES (VENUES, ACCOMMODATION, HELP DESK, LOST & FOUND) ---
@@ -591,15 +669,22 @@ class AdminModulesController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:140'],
             'position' => ['required', 'string', 'max:140'],
+            'category' => ['nullable', 'in:institute,executive,ministry,parliament'],
+            'department' => ['nullable', 'string', 'max:140'],
             'bio' => ['nullable', 'string', 'max:1000'],
             'quote' => ['nullable', 'string', 'max:300'],
             'email' => ['nullable', 'email', 'max:120'],
             'phone' => ['nullable', 'string', 'max:30'],
             'office_location' => ['nullable', 'string', 'max:140'],
             'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'remove_photo' => ['nullable', 'boolean'],
         ]);
 
-        if ($request->hasFile('photo')) {
+        if ($request->boolean('remove_photo')) {
+            $this->safeRemoveUpload($leader->photo);
+            $data['photo'] = null;
+        } elseif ($request->hasFile('photo')) {
+            $this->safeRemoveUpload($leader->photo);
             $file = $request->file('photo');
             $filename = 'leader_edit_'.$leader->id.'_'.time().'.'.$file->getClientOriginalExtension();
             $file->move(public_path('uploads/leaders'), $filename);
@@ -608,10 +693,248 @@ class AdminModulesController extends Controller
             unset($data['photo']);
         }
 
-        $leader->update($data);
+        unset($data['remove_photo']);
+        $leader->update(array_filter($data, fn ($v, $k) => $v !== null || $k === 'photo', ARRAY_FILTER_USE_BOTH));
 
         \App\Models\ActivityLog::record('leadership', 'leader_updated', "Updated leader profile: {$leader->name} ({$leader->position}).");
 
         return back()->with('success', "Updated {$leader->name}'s official leadership profile.");
+    }
+
+    public function deleteLeader(Leader $leader): RedirectResponse
+    {
+        $name = $leader->name;
+        $this->safeRemoveUpload($leader->photo);
+        $leader->delete();
+        \App\Models\ActivityLog::record('leadership', 'leader_deleted', "Deleted leader profile: {$name}.");
+
+        return back()->with('success', "Leader {$name} removed.");
+    }
+
+    public function updateVenue(Request $request, Venue $venue): RedirectResponse
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:140'],
+            'code' => ['required', 'string', 'max:30', 'unique:venues,code,'.$venue->id],
+            'building' => ['required', 'string', 'max:140'],
+            'capacity' => ['required', 'integer', 'min:5'],
+            'category' => ['required', 'in:auditorium,lecture_hall,lab,sports,meeting,hangar'],
+            'status' => ['required', 'in:available,booked,maintenance'],
+            'amenities' => ['nullable', 'string', 'max:400'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
+            'remove_image' => ['nullable', 'boolean'],
+        ]);
+
+        if ($request->boolean('remove_image')) {
+            $this->safeRemoveUpload($venue->image);
+            $data['image'] = null;
+        } elseif ($request->hasFile('image')) {
+            $this->safeRemoveUpload($venue->image);
+            $file = $request->file('image');
+            $filename = 'venue_'.$venue->id.'_'.time().'.'.$file->getClientOriginalExtension();
+            $file->move(public_path('uploads/venues'), $filename);
+            $data['image'] = 'uploads/venues/'.$filename;
+        } else {
+            unset($data['image']);
+        }
+        unset($data['remove_image']);
+
+        $venue->update([...$data, 'code' => strtoupper($data['code'])]);
+        \App\Models\ActivityLog::record('services', 'venue_updated', "Updated venue {$venue->name}.");
+
+        return back()->with('success', "Venue {$venue->name} updated.");
+    }
+
+    public function deleteVenue(Venue $venue): RedirectResponse
+    {
+        $name = $venue->name;
+        $this->safeRemoveUpload($venue->image);
+        $venue->delete();
+        \App\Models\ActivityLog::record('services', 'venue_deleted', "Deleted venue {$name}.");
+
+        return back()->with('success', "Venue {$name} deleted.");
+    }
+
+    public function updateAccommodation(Request $request, Accommodation $accommodation): RedirectResponse
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:160'],
+            'type' => ['required', 'in:on_campus_hostel,verified_off_campus,shared_apartment'],
+            'gender_policy' => ['required', 'in:mixed,male,female'],
+            'location' => ['required', 'string', 'max:180'],
+            'price_per_semester' => ['required', 'integer', 'min:0'],
+            'available_rooms' => ['required', 'integer', 'min:0'],
+            'total_rooms' => ['required', 'integer', 'min:1'],
+            'contact_person' => ['nullable', 'string', 'max:120'],
+            'contact_phone' => ['nullable', 'string', 'max:30'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
+            'remove_image' => ['nullable', 'boolean'],
+        ]);
+
+        if ($request->boolean('remove_image')) {
+            $this->safeRemoveUpload($accommodation->image);
+            $data['image'] = null;
+        } elseif ($request->hasFile('image')) {
+            $this->safeRemoveUpload($accommodation->image);
+            $file = $request->file('image');
+            $filename = 'acc_'.$accommodation->id.'_'.time().'.'.$file->getClientOriginalExtension();
+            $file->move(public_path('uploads/accommodations'), $filename);
+            $data['image'] = 'uploads/accommodations/'.$filename;
+        } else {
+            unset($data['image']);
+        }
+        unset($data['remove_image']);
+
+        $accommodation->update($data);
+        \App\Models\ActivityLog::record('services', 'accommodation_updated', "Updated accommodation {$accommodation->name}.");
+
+        return back()->with('success', "Accommodation {$accommodation->name} updated.");
+    }
+
+    public function deleteAccommodation(Accommodation $accommodation): RedirectResponse
+    {
+        $name = $accommodation->name;
+        $this->safeRemoveUpload($accommodation->image);
+        $accommodation->delete();
+        \App\Models\ActivityLog::record('services', 'accommodation_deleted', "Deleted accommodation {$name}.");
+
+        return back()->with('success', "Accommodation {$name} deleted.");
+    }
+
+    public function deleteLostFound(LostFoundItem $item): RedirectResponse
+    {
+        $name = $item->item_name;
+        $this->safeRemoveUpload($item->image);
+        $item->delete();
+        \App\Models\ActivityLog::record('services', 'lost_found_deleted', "Deleted Lost & Found item {$name}.");
+
+        return back()->with('success', "Lost & Found item {$name} deleted.");
+    }
+
+    public function deleteTicket(HelpTicket $ticket): RedirectResponse
+    {
+        $num = $ticket->ticket_number;
+        $ticket->delete();
+        \App\Models\ActivityLog::record('services', 'ticket_deleted', "Deleted help ticket {$num}.");
+
+        return back()->with('success', "Support ticket {$num} deleted.");
+    }
+
+    public function updateEvent(Request $request, CampusEvent $event): RedirectResponse
+    {
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:180'],
+            'category' => ['required', 'in:academic,social,sports,charity,governance,holiday'],
+            'venue_name' => ['required', 'string', 'max:140'],
+            'starts_at' => ['required', 'date'],
+            'description' => ['required', 'string', 'max:2000'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
+            'remove_image' => ['nullable', 'boolean'],
+        ]);
+
+        if ($request->boolean('remove_image')) {
+            $this->safeRemoveUpload($event->image);
+            $data['image'] = null;
+        } elseif ($request->hasFile('image')) {
+            $this->safeRemoveUpload($event->image);
+            $file = $request->file('image');
+            $filename = 'ev_'.$event->id.'_'.time().'.'.$file->getClientOriginalExtension();
+            $file->move(public_path('uploads/events'), $filename);
+            $data['image'] = 'uploads/events/'.$filename;
+        } else {
+            unset($data['image']);
+        }
+        unset($data['remove_image']);
+
+        $event->update($data);
+        \App\Models\ActivityLog::record('campus_life', 'event_updated', "Updated event {$event->title}.");
+
+        return back()->with('success', "Event {$event->title} updated.");
+    }
+
+    public function deleteEvent(CampusEvent $event): RedirectResponse
+    {
+        $title = $event->title;
+        $this->safeRemoveUpload($event->image);
+        $event->delete();
+        \App\Models\ActivityLog::record('campus_life', 'event_deleted', "Deleted event {$title}.");
+
+        return back()->with('success', "Event {$title} deleted.");
+    }
+
+    public function updateSport(Request $request, SportsActivity $sport): RedirectResponse
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:140'],
+            'sport_type' => ['required', 'in:football,basketball,volleyball,athletics,netball,chess,other'],
+            'captain_name' => ['nullable', 'string', 'max:120'],
+            'schedule' => ['required', 'string', 'max:140'],
+            'venue' => ['required', 'string', 'max:140'],
+            'upcoming_match' => ['nullable', 'string', 'max:180'],
+            'last_result' => ['nullable', 'string', 'max:140'],
+            'description' => ['nullable', 'string', 'max:800'],
+        ]);
+
+        $sport->update($data);
+        \App\Models\ActivityLog::record('campus_life', 'sport_updated', "Updated sports club {$sport->name}.");
+
+        return back()->with('success', "Sports club {$sport->name} updated.");
+    }
+
+    public function deleteSport(SportsActivity $sport): RedirectResponse
+    {
+        $name = $sport->name;
+        $sport->delete();
+        \App\Models\ActivityLog::record('campus_life', 'sport_deleted', "Deleted sports club {$name}.");
+
+        return back()->with('success', "Sports club {$name} deleted.");
+    }
+
+    public function updateCharity(Request $request, CharityCampaign $campaign): RedirectResponse
+    {
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:180'],
+            'beneficiary' => ['required', 'string', 'max:180'],
+            'event_when' => ['nullable', 'string', 'max:140'],
+            'event_where' => ['nullable', 'string', 'max:180'],
+            'planned_activities' => ['nullable', 'string', 'max:1500'],
+            'account_number' => ['nullable', 'string', 'max:180'],
+            'contact_info' => ['nullable', 'string', 'max:180'],
+            'ends_at' => ['nullable', 'date'],
+            'description' => ['required', 'string', 'max:2000'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
+            'remove_image' => ['nullable', 'boolean'],
+        ]);
+
+        if ($request->boolean('remove_image')) {
+            $this->safeRemoveUpload($campaign->image);
+            $data['image'] = null;
+        } elseif ($request->hasFile('image')) {
+            $this->safeRemoveUpload($campaign->image);
+            $file = $request->file('image');
+            $filename = 'charity_'.$campaign->id.'_'.time().'.'.$file->getClientOriginalExtension();
+            $file->move(public_path('uploads/charity'), $filename);
+            $data['image'] = 'uploads/charity/'.$filename;
+        } else {
+            unset($data['image']);
+        }
+        unset($data['remove_image']);
+
+        $campaign->update($data);
+        \App\Models\ActivityLog::record('campus_life', 'charity_updated', "Updated charity notice {$campaign->title}.");
+
+        return back()->with('success', "Charity notice {$campaign->title} updated.");
+    }
+
+    public function deleteCharity(CharityCampaign $campaign): RedirectResponse
+    {
+        $title = $campaign->title;
+        $this->safeRemoveUpload($campaign->image);
+        $campaign->delete();
+        \App\Models\ActivityLog::record('campus_life', 'charity_deleted', "Deleted charity notice {$title}.");
+
+        return back()->with('success', "Charity notice {$title} deleted.");
     }
 }

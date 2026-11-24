@@ -83,7 +83,7 @@
                     <td>
                         <form method="POST" action="{{ route('admin.courses.assign-cr', $course) }}" class="flex-center" style="gap:6px;">
                             @csrf
-                            <select name="cr_user_id" class="form-select" style="padding:6px 10px;font-size:12px;max-width:220px;">
+                            <select name="cr_user_id" class="form-select" style="padding:6px 10px;font-size:12px;max-width:210px;">
                                 <option value="">-- Leave Vacant (Admin Managed) --</option>
                                 @foreach($eligibleCrs as $u)
                                     <option value="{{ $u->id }}" @selected($comm && $comm->cr_user_id === $u->id)>
@@ -93,6 +93,56 @@
                             </select>
                             <button type="submit" class="btn btn-primary btn-sm">Update</button>
                         </form>
+
+                        <div class="flex-between mt-2" style="gap:6px;">
+                            <details class="admin-details" style="flex:1;">
+                                <summary>Edit Course</summary>
+                                <form method="POST" action="{{ route('admin.courses.update', $course) }}" class="admin-details-body">
+                                    @csrf
+                                    @method('PUT')
+                                    <div class="grid grid-2" style="gap:8px;">
+                                        <div class="form-group" style="margin:0;">
+                                            <label class="form-label">Code</label>
+                                            <input type="text" name="code" value="{{ $course->code }}" class="form-control mono" required>
+                                        </div>
+                                        <div class="form-group" style="margin:0;">
+                                            <label class="form-label">Level</label>
+                                            <select name="level" class="form-select" required>
+                                                <option value="bachelor" @selected($course->level === 'bachelor')>Bachelor's Degree</option>
+                                                <option value="diploma" @selected($course->level === 'diploma')>Ordinary Diploma</option>
+                                                <option value="certificate" @selected($course->level === 'certificate')>Technician Certificate</option>
+                                                <option value="masters" @selected($course->level === 'masters')>Master's Degree</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group mt-2" style="margin-bottom:8px;">
+                                        <label class="form-label">Programme Name</label>
+                                        <input type="text" name="name" value="{{ $course->name }}" class="form-control" required>
+                                    </div>
+                                    <div class="grid grid-2" style="gap:8px;">
+                                        <div class="form-group" style="margin:0;">
+                                            <label class="form-label">Faculty</label>
+                                            <input type="text" name="faculty" value="{{ $course->faculty }}" class="form-control" required>
+                                        </div>
+                                        <div class="form-group" style="margin:0;">
+                                            <label class="form-label">Duration (Years)</label>
+                                            <input type="number" name="duration_years" value="{{ $course->duration_years }}" min="1" max="6" class="form-control" required>
+                                        </div>
+                                    </div>
+                                    <div class="form-group mt-2" style="margin-bottom:8px;">
+                                        <label class="form-label">Description</label>
+                                        <input type="text" name="description" value="{{ $course->description }}" class="form-control">
+                                    </div>
+                                    <button type="submit" class="btn btn-primary btn-sm">Save Course</button>
+                                </form>
+                            </details>
+
+                            <form method="POST" action="{{ route('admin.courses.delete', $course) }}" style="margin:0;" onsubmit="return confirm('Delete course {{ $course->code }} and its communities?');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-danger btn-sm" style="padding:4px 8px;font-size:11px;">Delete</button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
             @endforeach

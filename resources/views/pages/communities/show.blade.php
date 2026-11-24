@@ -59,52 +59,69 @@
             <div class="card" style="padding:20px;">
                 <div class="chat-feed" id="communityChatFeed">
                     @forelse($messages as $msg)
-                        @php $isMine = auth()->check() && (int)auth()->id() === (int)$msg->user_id; @endphp
+                        @php
+                            $isMine = auth()->check() && (int)auth()->id() === (int)$msg->user_id;
+                            $initials = strtoupper(substr($msg->user->name, 0, 2));
+                            $fallbackClass = $msg->user->isAdmin() ? 'is-admin' : ($msg->user->isClassRep() ? 'is-cr' : '');
+                        @endphp
                         <div class="chat-msg {{ $isMine ? 'is-mine' : '' }} {{ $msg->is_pinned ? 'is-pinned' : '' }}">
-                            <div class="flex-between mb-1">
-                                <div class="flex-center flex-wrap" style="gap:6px;">
-                                    <strong style="font-size:14px;color:var(--navy-900);">{{ $msg->user->name }}</strong>
-                                    @if($msg->user->isAdmin())
-                                        <span class="badge badge-gold">SONIT Admin</span>
-                                    @elseif($msg->user->isClassRep())
-                                        <span class="badge badge-emerald">{{ $msg->user->course?->code }} CR</span>
-                                    @elseif($msg->user->course)
-                                        <span class="badge badge-slate mono">{{ $msg->user->course->code }}</span>
+                            <div class="chat-msg-row">
+                                @if($msg->user->avatar)
+                                    <img src="{{ asset($msg->user->avatar) }}" alt="{{ $msg->user->name }}" class="avatar-tile">
+                                @else
+                                    <div class="avatar-tile avatar-fallback {{ $fallbackClass }}" title="{{ $msg->user->name }}">{{ $initials }}</div>
+                                @endif
+
+                                <div class="chat-msg-body">
+                                    <div class="flex-between mb-1">
+                                        <div class="flex-center flex-wrap" style="gap:6px;">
+                                            <strong style="font-size:14px;color:var(--navy-900);">{{ $msg->user->name }}</strong>
+                                            @if($msg->user->sonit_title)
+                                                <span class="badge badge-crimson">{{ $msg->user->sonit_title }}</span>
+                                            @endif
+                                            @if($msg->user->isAdmin())
+                                                <span class="badge badge-gold">SONIT Admin</span>
+                                            @elseif($msg->user->isClassRep())
+                                                <span class="badge badge-emerald">{{ $msg->user->course?->code }} CR</span>
+                                            @elseif($msg->user->course)
+                                                <span class="badge badge-slate mono">{{ $msg->user->course->code }}</span>
+                                            @endif
+                                            @if($msg->is_pinned)<span class="badge badge-amber">Pinned</span>@endif
+                                        </div>
+                                        <span class="text-xs muted">{{ $msg->created_at->diffForHumans() }}</span>
+                                    </div>
+
+                                    @if($msg->replyTo)
+                                        <div class="chat-quote">
+                                            Replying to <strong>{{ $msg->replyTo->user->name }}</strong>: "{{ \Illuminate\Support\Str::limit($msg->replyTo->body, 90) }}"
+                                        </div>
                                     @endif
-                                    @if($msg->is_pinned)<span class="badge badge-amber">Pinned</span>@endif
-                                </div>
-                                <span class="text-xs muted">{{ $msg->created_at->diffForHumans() }}</span>
-                            </div>
 
-                            @if($msg->replyTo)
-                                <div class="chat-quote">
-                                    Replying to <strong>{{ $msg->replyTo->user->name }}</strong>: "{{ \Illuminate\Support\Str::limit($msg->replyTo->body, 90) }}"
-                                </div>
-                            @endif
+                                    <div style="font-size:14.5px;color:var(--ink-900);white-space:pre-line;">{{ $msg->body }}</div>
 
-                            <div style="font-size:14.5px;color:var(--ink-900);white-space:pre-line;">{{ $msg->body }}</div>
+                                    @if($msg->attachment)
+                                        <img src="{{ asset($msg->attachment) }}" alt="Attachment" style="max-width:340px;border-radius:4px;margin-top:10px;border:1px solid var(--border);">
+                                    @endif
 
-                            @if($msg->attachment)
-                                <img src="{{ asset($msg->attachment) }}" alt="Attachment" style="max-width:340px;border-radius:10px;margin-top:10px;border:1px solid var(--border);">
-                            @endif
-
-                            @auth
-                                <div class="flex-center mt-2" style="gap:12px;">
-                                    <button type="button" class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:11.5px;"
-                                        data-reply-id="{{ $msg->id }}"
-                                        data-reply-preview="{{ $msg->user->name }}: {{ \Illuminate\Support\Str::limit($msg->body, 70) }}">
-                                        Reply
-                                    </button>
-                                    @if($canModerate)
-                                        <form method="POST" action="{{ route('communities.messages.pin', [$community, $msg]) }}" style="margin:0;">
-                                            @csrf
-                                            <button type="submit" class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:11.5px;">
-                                                {{ $msg->is_pinned ? 'Unpin' : 'Pin Notice' }}
+                                    @auth
+                                        <div class="flex-center mt-2" style="gap:12px;">
+                                            <button type="button" class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:11.5px;"
+                                                data-reply-id="{{ $msg->id }}"
+                                                data-reply-preview="{{ $msg->user->name }}: {{ \Illuminate\Support\Str::limit($msg->body, 70) }}">
+                                                Reply
                                             </button>
-                                        </form>
-                                    @endif
+                                            @if($canModerate)
+                                                <form method="POST" action="{{ route('communities.messages.pin', [$community, $msg]) }}" style="margin:0;">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:11.5px;">
+                                                        {{ $msg->is_pinned ? 'Unpin' : 'Pin Notice' }}
+                                                    </button>
+                                                </form>
+                                            @endif
+                                        </div>
+                                    @endauth
                                 </div>
-                            @endauth
+                            </div>
                         </div>
                     @empty
                         <div style="text-align:center;padding:42px 16px;" class="muted">
@@ -157,13 +174,22 @@
                 @endif
 
                 @if($community->cr)
-                    <div style="padding:12px;border-radius:10px;background:var(--emerald-50);border:1px solid #A7F3D0;">
+                    <div style="padding:12px;border-radius:4px;background:var(--emerald-50);border:1px solid #A7F3D0;">
                         <div class="text-xs" style="color:var(--emerald-700);font-weight:700;text-transform:uppercase;">Assigned Class Rep (CR)</div>
-                        <div style="font-weight:800;color:var(--navy-900);margin-top:2px;">{{ $community->cr->name }}</div>
-                        <div class="text-xs mono muted">{{ $community->cr->reg_no }}</div>
+                        <div class="flex-center mt-1" style="gap:8px;">
+                            @if($community->cr->avatar)
+                                <img src="{{ asset($community->cr->avatar) }}" alt="{{ $community->cr->name }}" class="avatar-tile sm">
+                            @else
+                                <div class="avatar-tile sm avatar-fallback is-cr">{{ strtoupper(substr($community->cr->name, 0, 2)) }}</div>
+                            @endif
+                            <div>
+                                <div style="font-weight:800;color:var(--navy-900);">{{ $community->cr->name }}</div>
+                                <div class="text-xs mono muted">{{ $community->cr->reg_no }}</div>
+                            </div>
+                        </div>
                     </div>
                 @elseif($community->type === 'course_default')
-                    <div style="padding:12px;border-radius:10px;background:var(--amber-50);border:1px solid #FDE68A;">
+                    <div style="padding:12px;border-radius:4px;background:var(--amber-50);border:1px solid #FDE68A;">
                         <div class="text-xs" style="color:var(--amber-700);font-weight:700;text-transform:uppercase;">CR Seat Reserved (Vacant)</div>
                         <div class="text-xs muted mt-1">No CR registered yet for {{ $community->course?->code }}. SONIT Admins govern this channel until a CR is appointed.</div>
                     </div>
@@ -191,8 +217,17 @@
                 </div>
                 <div style="display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto;">
                     @foreach($members as $member)
-                        <div class="flex-between text-xs" style="padding:6px 0;border-bottom:1px solid var(--border);">
-                            <strong style="color:var(--ink-900);">{{ $member->name }}</strong>
+                        <div class="flex-between text-xs" style="padding:6px 0;border-bottom:1px solid var(--border);gap:8px;">
+                            <div class="flex-center" style="gap:8px;min-width:0;">
+                                @if($member->avatar)
+                                    <img src="{{ asset($member->avatar) }}" alt="{{ $member->name }}" class="avatar-tile sm">
+                                @else
+                                    <div class="avatar-tile sm avatar-fallback {{ $member->isAdmin() ? 'is-admin' : ($member->isClassRep() ? 'is-cr' : '') }}">
+                                        {{ strtoupper(substr($member->name, 0, 2)) }}
+                                    </div>
+                                @endif
+                                <strong style="color:var(--ink-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ $member->name }}</strong>
+                            </div>
                             <span class="badge badge-slate">{{ strtoupper($member->pivot->member_role) }}</span>
                         </div>
                     @endforeach

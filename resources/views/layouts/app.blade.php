@@ -120,11 +120,20 @@
 
         <div class="sidebar-footer">
             @auth
-                <div style="font-size:12px;font-weight:700;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ auth()->user()->name }}</div>
+                <div class="flex-center" style="gap:9px;margin-bottom:8px;">
+                    @if(auth()->user()->avatar)
+                        <img src="{{ asset(auth()->user()->avatar) }}" alt="{{ auth()->user()->name }}" class="avatar-tile sm" style="width:34px;height:34px;border-color:var(--nit-blue);">
+                    @else
+                        <div class="avatar-tile sm avatar-fallback" style="width:34px;height:34px;">{{ strtoupper(substr(auth()->user()->name, 0, 2)) }}</div>
+                    @endif
+                    <div style="min-width:0;flex:1;">
+                        <div style="font-size:12px;font-weight:700;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ auth()->user()->name }}</div>
+                        <div class="mono" style="font-size:10.5px;color:var(--nit-blue);">{{ auth()->user()->reg_no ?? auth()->user()->roleLabel() }}</div>
+                    </div>
+                </div>
                 @if(auth()->user()->sonit_title)
-                    <div style="margin:3px 0 4px;"><span class="badge badge-crimson" style="font-size:10px;">{{ auth()->user()->sonit_title }}</span></div>
+                    <div style="margin:0 0 8px;"><span class="badge badge-crimson" style="font-size:10px;">{{ auth()->user()->sonit_title }}</span></div>
                 @endif
-                <div class="mono" style="font-size:10.5px;color:var(--nit-blue);margin-bottom:8px;">{{ auth()->user()->reg_no ?? auth()->user()->roleLabel() }}</div>
                 <div class="flex-between" style="gap:6px;">
                     <a href="{{ route('profile.edit') }}" class="btn btn-ghost-light btn-sm" style="flex:1;">Profile</a>
                     <form method="POST" action="{{ route('logout') }}" style="margin:0;flex:1;">

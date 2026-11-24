@@ -74,7 +74,7 @@
                 @if($t->account_number)<div class="text-xs mono mt-1" style="color:var(--nit-red-dark);">Account: {{ $t->account_number }}</div>@endif
                 @if($t->event_when)<div class="text-xs muted">When: {{ $t->event_when }} · Where: {{ $t->event_where }}</div>@endif
                 <div class="text-xs muted mono mt-1">Expires: {{ $t->ends_at->format('d M Y H:i') }}</div>
-                <div class="flex-center mt-2">
+                <div class="flex-center mt-2" style="gap:6px;">
                     <form method="POST" action="{{ route('admin.timers.toggle', $t) }}" style="margin:0;">
                         @csrf
                         <button type="submit" class="btn btn-outline btn-sm">{{ $t->is_active ? 'Pause' : 'Activate' }}</button>
@@ -85,6 +85,47 @@
                         <button type="submit" class="btn btn-danger btn-sm">Delete</button>
                     </form>
                 </div>
+
+                <details class="admin-details mt-2">
+                    <summary>Edit Notice Details</summary>
+                    <form method="POST" action="{{ route('admin.timers.update', $t) }}" class="admin-details-body">
+                        @csrf
+                        @method('PUT')
+                        <div class="form-group">
+                            <label class="form-label">Notice Title</label>
+                            <input type="text" name="title" value="{{ $t->title }}" class="form-control" required>
+                        </div>
+                        <div class="grid grid-2" style="gap:8px;">
+                            <div class="form-group">
+                                <label class="form-label">Category</label>
+                                <select name="category" class="form-select" required>
+                                    @foreach(['charity' => 'Charity / Tour', 'election' => 'Election', 'event' => 'Major Event', 'deadline' => 'Academic Deadline', 'urgent' => 'Urgent Notice'] as $catKey => $catLbl)
+                                        <option value="{{ $catKey }}" @selected($t->category === $catKey)>{{ $catLbl }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Ends At</label>
+                                <input type="datetime-local" name="ends_at" value="{{ $t->ends_at->format('Y-m-d\TH:i') }}" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="grid grid-2" style="gap:8px;">
+                            <div class="form-group"><label class="form-label">When</label><input type="text" name="event_when" value="{{ $t->event_when }}" class="form-control"></div>
+                            <div class="form-group"><label class="form-label">Where</label><input type="text" name="event_where" value="{{ $t->event_where }}" class="form-control"></div>
+                        </div>
+                        <div class="form-group"><label class="form-label">Planned Activities</label><textarea name="planned_activities" rows="2" class="form-control">{{ $t->planned_activities }}</textarea></div>
+                        <div class="grid grid-2" style="gap:8px;">
+                            <div class="form-group"><label class="form-label">Account Number / Lipa Namba</label><input type="text" name="account_number" value="{{ $t->account_number }}" class="form-control mono"></div>
+                            <div class="form-group"><label class="form-label">Coordinator Contacts</label><input type="text" name="contact_info" value="{{ $t->contact_info }}" class="form-control"></div>
+                        </div>
+                        <div class="grid grid-3" style="gap:8px;">
+                            <div class="form-group"><label class="form-label">CTA Label</label><input type="text" name="cta_label" value="{{ $t->cta_label }}" class="form-control"></div>
+                            <div class="form-group"><label class="form-label">CTA URL</label><input type="text" name="cta_url" value="{{ $t->cta_url }}" class="form-control"></div>
+                            <div class="form-group"><label class="form-label">Priority</label><input type="number" name="priority" value="{{ $t->priority }}" class="form-control"></div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm">Save Notice Changes</button>
+                    </form>
+                </details>
             </div>
         @empty
             <p class="text-sm muted">No countdown notices yet.</p>
