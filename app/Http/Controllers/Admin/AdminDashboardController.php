@@ -229,6 +229,11 @@ class AdminDashboardController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:160'],
             'subtitle' => ['nullable', 'string', 'max:280'],
+            'event_when' => ['nullable', 'string', 'max:140'],
+            'event_where' => ['nullable', 'string', 'max:180'],
+            'planned_activities' => ['nullable', 'string', 'max:1200'],
+            'account_number' => ['nullable', 'string', 'max:180'],
+            'contact_info' => ['nullable', 'string', 'max:180'],
             'category' => ['required', 'in:charity,election,event,deadline,urgent'],
             'ends_at' => ['required', 'date', 'after:now'],
             'cta_label' => ['nullable', 'string', 'max:50'],

@@ -423,15 +423,20 @@ class DatabaseSeeder extends Seeder
             Leader::updateOrCreate(['name' => $leader['name']], $leader);
         }
 
-        // 6. Top-of-Homepage Timer Countdown Announcements
+        // 6. Top-of-Homepage Timer Countdown Announcements (Reminders with Where, When, Plan, Account & Contacts)
         TimerAnnouncement::updateOrCreate(
-            ['title' => 'SONIT Annual Mabibo Orphanage & Welfare Charity Drive'],
+            ['title' => 'SONIT Annual Mabibo Orphanage & Charity Tour'],
             [
-                'subtitle' => 'Join 1,400+ NIT students contributing towards school supplies, medical aid, and tuition relief before the deadline.',
+                'subtitle' => 'Delivering textbooks, uniforms, clean water tanks, and meals to Tumaini & Faraja Children\'s Centres.',
+                'event_when' => 'Saturday, 5th Dec 2026 · 08:30 AM (Departure from NIT Main Gate)',
+                'event_where' => 'Tumaini & Faraja Children\'s Centres, Mabibo, Dar es Salaam',
+                'planned_activities' => 'Student convoy handover of school kits, medical supplies, shared lunch with 180 children, and compound clean-up.',
+                'account_number' => 'CRDB: 0150442198800 (SONIT CHARITY) | M-Pesa Lipa: 5589021',
+                'contact_info' => 'Hon. Robert Nziku (Finance): +255 788 112 404 | SONIT Welfare: +255 754 000 911',
                 'category' => 'charity',
                 'starts_at' => now()->subDays(2),
                 'ends_at' => now()->addDays(6)->addHours(14),
-                'cta_label' => 'Contribute Now',
+                'cta_label' => 'View Details & Account',
                 'cta_url' => '/charity',
                 'target_amount' => 5000000,
                 'raised_amount' => 3450000,
@@ -445,6 +450,11 @@ class DatabaseSeeder extends Seeder
             ['title' => 'SONIT 2026/2027 General Elections — Online Ballot Closes Soon'],
             [
                 'subtitle' => 'Cast your verified vote for President and your Course Parliament Representative securely via the E-Election Portal.',
+                'event_when' => 'Voting open 24/7 until deadline (or until closed by Electoral Commission)',
+                'event_where' => 'Online via SONIT E-Elections Portal',
+                'planned_activities' => 'Single-ballot verified voting for President and Course Parliament Representatives.',
+                'account_number' => null,
+                'contact_info' => 'SONIT Electoral Commission Desk: +255 22 240 0148',
                 'category' => 'election',
                 'starts_at' => now()->subDay(),
                 'ends_at' => now()->addDays(3)->addHours(8),
@@ -868,17 +878,22 @@ class DatabaseSeeder extends Seeder
             );
         }
 
-        // 15. Charity & Student Welfare Campaigns
-        $charity1 = CharityCampaign::updateOrCreate(
+        // 15. Charity Tours & Student Welfare Reminders (What, Where, When, Account Numbers & Contacts)
+        CharityCampaign::updateOrCreate(
             ['slug' => 'mabibo-orphanage-back-to-school-drive'],
             [
-                'title' => 'Mabibo Orphanage & Community Back-to-School Drive',
+                'title' => 'Mabibo Orphanage & Community Charity Tour',
                 'beneficiary' => 'Tumaini & Faraja Children\'s Centres, Mabibo',
-                'description' => 'SONIT\'s flagship semester charity initiative providing textbooks, uniforms, clean water tanks, and nutrition packs to 180 vulnerable children in our surrounding Mabibo community.',
+                'event_when' => 'Saturday, 5th Dec 2026 · 08:30 AM – 02:30 PM',
+                'event_where' => 'Tumaini & Faraja Children\'s Centres, Mabibo (Bus departs NIT Main Gate 08:00 AM)',
+                'planned_activities' => '1. Handover of 180 school uniform & textbook kits.\n2. Installation of two 5,000L clean water storage tanks.\n3. Shared lunch, mentorship games, and medical check-up with NIT student volunteers.',
+                'account_number' => 'CRDB Bank: 0150442198800 (SONIT CHARITY TRUST) · M-Pesa / Mixx by Yas Lipa: 5589021',
+                'contact_info' => 'Hon. Robert Nziku (Finance Minister): +255 788 112 404 · Welfare Desk: +255 754 000 911',
+                'description' => 'SONIT\'s flagship semester charity tour supporting 180 vulnerable children in our Mabibo neighborhood. Contribute directly via the official bank or mobile money accounts below, or drop physical clothes/books at SONIT Secretariat Room 108.',
                 'target_amount' => 5000000,
                 'raised_amount' => 3450000,
                 'ends_at' => now()->addDays(6)->addHours(14),
-                'payment_instructions' => 'M-Pesa / Tigo Pesa Lipa Namba: 5589021 (SONIT CHARITY TRUST) or CRDB Account: 0150442198800. Submit your contribution pledge & reference below for transparent public tallying.',
+                'payment_instructions' => 'Send contributions directly via CRDB 0150442198800 or Lipa Namba 5589021 (Reference: YOUR COURSE CODE e.g. BLTM). Physical donations accepted at SONIT Room 108.',
                 'image' => 'images/campus/students.jpg',
                 'status' => 'active',
                 'created_by' => $sonitAdmin->id,
@@ -888,38 +903,22 @@ class DatabaseSeeder extends Seeder
         CharityCampaign::updateOrCreate(
             ['slug' => 'sonit-emergency-student-tuition-solidarity-fund'],
             [
-                'title' => 'SONIT Emergency Student Tuition & Medical Solidarity Fund',
-                'beneficiary' => 'Financially Vulnerable Continuing NIT Students',
-                'description' => 'A transparent student-backed solidarity reserve assisting high-performing NIT scholars facing sudden bereavement or acute medical emergencies so no student drops out over short-term hardship.',
+                'title' => 'NIT Student Educational Tour & Emergency Solidarity Fund',
+                'beneficiary' => 'Bagamoyo Heritage & Port Logistics Field Tour + Vulnerable NIT Students',
+                'event_when' => 'Saturday, 19th Dec 2026 · 07:30 AM – 05:00 PM',
+                'event_where' => 'Dar es Salaam Port Terminal & Bagamoyo Historical Corridor (Meet at NIT MPH Plaza)',
+                'planned_activities' => '1. Guided educational tour of Dar es Salaam Port & SGR Freight Yard.\n2. Student solidarity fundraising to assist continuing NIT scholars facing sudden medical or tuition emergencies.\n3. Evening networking dinner & mentorship.',
+                'account_number' => 'NMB Bank: 20110089451 (SONIT WELFARE SOLIDARITY) · Airtel Money Merchant: 441209',
+                'contact_info' => 'Hon. Janeth Johnson (Prime Minister): +255 765 890 303 · office@sonit.nit.ac.tz',
+                'description' => 'Open to all NIT faculties. Register physically with your Class Representative or send tour/solidarity contributions directly to the official SONIT accounts below.',
                 'target_amount' => 8000000,
                 'raised_amount' => 4820000,
                 'ends_at' => now()->addDays(21),
-                'payment_instructions' => 'NMB Account: 20110089451 (SONIT WELFARE SOLIDARITY) or Airtel Money Merchant: 441209.',
+                'payment_instructions' => 'Use NMB Account 20110089451 or Airtel Money 441209 and keep your SMS receipt to show your Class Rep or SONIT Secretariat.',
                 'image' => 'images/campus/coeato.jpg',
                 'status' => 'active',
                 'created_by' => $superAdmin->id,
             ]
         );
-
-        if (CharityContribution::count() === 0) {
-            CharityContribution::create([
-                'charity_campaign_id' => $charity1->id,
-                'user_id' => $bltmCr->id,
-                'donor_name' => 'BLTM Third Year Class Collective',
-                'amount' => 450000,
-                'payment_reference' => 'MPESA-Q89X22L',
-                'message' => 'Proudly supporting our Mabibo neighbours!',
-                'status' => 'verified',
-            ]);
-            CharityContribution::create([
-                'charity_campaign_id' => $charity1->id,
-                'user_id' => $bitCr->id,
-                'donor_name' => 'BIT Innovation Guild',
-                'amount' => 300000,
-                'payment_reference' => 'CRDB-778102',
-                'message' => 'Education transforms lives.',
-                'status' => 'verified',
-            ]);
-        }
     }
 }

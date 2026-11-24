@@ -121,6 +121,36 @@ class AdminModulesController extends Controller
         return back()->with('success', 'Election controls updated successfully.');
     }
 
+    public function endElection(Request $request, Election $election): RedirectResponse
+    {
+        $election->update([
+            'voting_open' => false,
+            'applications_open' => false,
+            'ended_at' => now(),
+            'ended_by' => $request->user()->id,
+            'results_published' => true,
+        ]);
+
+        // Also deactivate any running election countdown timers immediately
+        \App\Models\TimerAnnouncement::where('category', 'election')
+            ->where('is_active', true)
+            ->update(['is_active' => false]);
+
+        return back()->with('success', 'Election ended immediately. Voting is now permanently closed and official results are published.');
+    }
+
+    public function reopenElection(Request $request, Election $election): RedirectResponse
+    {
+        $election->update([
+            'ended_at' => null,
+            'ended_by' => null,
+            'is_enabled' => true,
+            'voting_open' => true,
+        ]);
+
+        return back()->with('success', 'Election has been reopened for voting.');
+    }
+
     public function updateCandidateStatus(Request $request, Candidate $candidate): RedirectResponse
     {
         $data = $request->validate([
@@ -276,7 +306,12 @@ class AdminModulesController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:180'],
             'beneficiary' => ['required', 'string', 'max:180'],
-            'target_amount' => ['required', 'integer', 'min:10000'],
+            'event_when' => ['nullable', 'string', 'max:140'],
+            'event_where' => ['nullable', 'string', 'max:180'],
+            'planned_activities' => ['nullable', 'string', 'max:1500'],
+            'account_number' => ['nullable', 'string', 'max:180'],
+            'contact_info' => ['nullable', 'string', 'max:180'],
+            'target_amount' => ['nullable', 'integer', 'min:0'],
             'raised_amount' => ['nullable', 'integer', 'min:0'],
             'ends_at' => ['nullable', 'date'],
             'payment_instructions' => ['nullable', 'string', 'max:1000'],
@@ -286,12 +321,13 @@ class AdminModulesController extends Controller
         CharityCampaign::create([
             ...$data,
             'slug' => Str::slug($data['title']).'-'.Str::lower(Str::random(4)),
+            'target_amount' => $data['target_amount'] ?? 0,
             'raised_amount' => $data['raised_amount'] ?? 0,
             'status' => 'active',
             'created_by' => $request->user()->id,
         ]);
 
-        return back()->with('success', 'Charity campaign launched.');
+        return back()->with('success', 'Charity / Tour notice published.');
     }
 
     public function verifyCharityContribution(CharityContribution $contribution): RedirectResponse

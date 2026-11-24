@@ -11,6 +11,11 @@ class TimerAnnouncement extends Model
     protected $fillable = [
         'title',
         'subtitle',
+        'event_when',
+        'event_where',
+        'planned_activities',
+        'account_number',
+        'contact_info',
         'category',
         'starts_at',
         'ends_at',

@@ -110,8 +110,15 @@ class HomeController extends Controller
             ->take(3)
             ->get();
 
+        $presidentLeader = Leader::where('is_active', true)
+            ->where('category', 'executive')
+            ->where('position', 'like', '%President%')
+            ->orderBy('sort_order')
+            ->first();
+
         return view('portal.dashboard', compact(
             'user',
+            'presidentLeader',
             'myCourseCommunities',
             'generalCommunities',
             'activeElection',

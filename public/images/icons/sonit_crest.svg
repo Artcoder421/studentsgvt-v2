@@ -1,39 +1,39 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
   <defs>
     <linearGradient id="navyTop" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1E3F6D"/>
-      <stop offset="100%" stop-color="#0B1F3A"/>
+      <stop offset="0%" stop-color="#22262E"/>
+      <stop offset="100%" stop-color="#111317"/>
     </linearGradient>
     <linearGradient id="navySide" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#132D52"/>
-      <stop offset="100%" stop-color="#061224"/>
+      <stop offset="0%" stop-color="#1B1E24"/>
+      <stop offset="100%" stop-color="#090B0E"/>
     </linearGradient>
     <linearGradient id="navyDark" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0D2240"/>
-      <stop offset="100%" stop-color="#050E1D"/>
+      <stop offset="0%" stop-color="#16191F"/>
+      <stop offset="100%" stop-color="#08090C"/>
     </linearGradient>
     <linearGradient id="glassBlue" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#60A5FA" stop-opacity="0.92"/>
-      <stop offset="50%" stop-color="#2563EB" stop-opacity="0.82"/>
-      <stop offset="100%" stop-color="#1E3A8A" stop-opacity="0.95"/>
+      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.92"/>
+      <stop offset="50%" stop-color="#0095DA" stop-opacity="0.82"/>
+      <stop offset="100%" stop-color="#0069A3" stop-opacity="0.95"/>
     </linearGradient>
     <linearGradient id="glassShine" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.65"/>
       <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.0"/>
     </linearGradient>
     <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#F7DF8D"/>
-      <stop offset="45%" stop-color="#D4A643"/>
-      <stop offset="100%" stop-color="#8B6418"/>
+      <stop offset="0%" stop-color="#FF6B70"/>
+      <stop offset="45%" stop-color="#E31E24"/>
+      <stop offset="100%" stop-color="#A31015"/>
     </linearGradient>
     <linearGradient id="goldLight" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#FFF0B8"/>
-      <stop offset="100%" stop-color="#C89B3C"/>
+      <stop offset="0%" stop-color="#FF8A8E"/>
+      <stop offset="100%" stop-color="#E31E24"/>
     </linearGradient>
     <radialGradient id="floorShadow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#0B1F3A" stop-opacity="0.22"/>
-      <stop offset="70%" stop-color="#0B1F3A" stop-opacity="0.06"/>
-      <stop offset="100%" stop-color="#0B1F3A" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#111317" stop-opacity="0.22"/>
+      <stop offset="70%" stop-color="#111317" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#111317" stop-opacity="0"/>
     </radialGradient>
     <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
       <feGaussianBlur stdDeviation="4" result="blur"/>
@@ -49,5 +49,5 @@
   <line x1="64" y1="22" x2="64" y2="106" stroke="url(#goldLight)" stroke-width="4" stroke-linecap="round"/>
   <line x1="22" y1="64" x2="106" y2="64" stroke="url(#goldLight)" stroke-width="4" stroke-linecap="round"/>
   <polygon points="64,18 71,34 57,34" fill="url(#goldLight)"/>
-  <circle cx="64" cy="64" r="5" fill="#0B1F3A"/>
+  <circle cx="64" cy="64" r="5" fill="#111317"/>
 </svg>

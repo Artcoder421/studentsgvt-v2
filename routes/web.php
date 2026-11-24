@@ -121,6 +121,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     Route::get('/elections', [AdminModulesController::class, 'elections'])->name('elections');
     Route::post('/elections', [AdminModulesController::class, 'storeElection'])->name('elections.store');
     Route::post('/elections/{election}/flags', [AdminModulesController::class, 'updateElectionFlags'])->name('elections.flags');
+    Route::post('/elections/{election}/end', [AdminModulesController::class, 'endElection'])->name('elections.end');
+    Route::post('/elections/{election}/reopen', [AdminModulesController::class, 'reopenElection'])->name('elections.reopen');
     Route::post('/candidates/{candidate}/status', [AdminModulesController::class, 'updateCandidateStatus'])->name('candidates.status');
 
     // Campus Services (Venues, Accommodation, Help Desk, Lost & Found)

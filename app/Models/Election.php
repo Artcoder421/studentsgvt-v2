@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Election extends Model
@@ -17,6 +18,8 @@ class Election extends Model
         'results_published',
         'voting_starts_at',
         'voting_ends_at',
+        'ended_at',
+        'ended_by',
     ];
 
     protected function casts(): array
@@ -28,7 +31,13 @@ class Election extends Model
             'results_published' => 'boolean',
             'voting_starts_at' => 'datetime',
             'voting_ends_at' => 'datetime',
+            'ended_at' => 'datetime',
         ];
+    }
+
+    public function endedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'ended_by');
     }
 
     public function candidates(): HasMany
@@ -46,9 +55,15 @@ class Election extends Model
         return $this->hasMany(Vote::class);
     }
 
+    public function isEnded(): bool
+    {
+        return $this->ended_at !== null;
+    }
+
     public function isVotingActive(): bool
     {
-        if (! $this->is_enabled || ! $this->voting_open) {
+        // Admin early termination overrides any active countdown immediately
+        if ($this->isEnded() || ! $this->is_enabled || ! $this->voting_open) {
             return false;
         }
 

@@ -53,11 +53,18 @@ class SonitPortalTest extends TestCase
         }
 
         $home = $this->get('/');
-        $home->assertSee('SONIT Annual Mabibo Orphanage & Welfare Charity Drive');
+        $home->assertSee('SONIT Annual Mabibo Orphanage & Charity Tour');
+        $home->assertSee('images/nit_logo_badge.png');
         $home->assertSee('images/portraits/rector.jpg');
         $home->assertSee('images/portraits/president.jpg');
         $home->assertSee('images/portraits/vice_president.jpg');
         $home->assertSee('images/campus/hero_gate.jpg');
+
+        // Charity page shows What, Where, When, Account Number & Contacts (no in-system payment form)
+        $charity = $this->get('/charity');
+        $charity->assertSee('CRDB Bank: 0150442198800');
+        $charity->assertSee('What We Are Planning To Do');
+        $charity->assertDontSee('Log Your Contribution / Pledge');
     }
 
     public function test_login_works_with_nit_reg_no_and_blocks_invalid_password(): void
@@ -211,14 +218,31 @@ class SonitPortalTest extends TestCase
         ])->assertRedirect('/elections');
         $this->assertDatabaseCount('votes', 2);
 
-        // Disabling election genuinely blocks voting (fixing legacy PHP truthiness bug!)
-        $election->update(['voting_open' => false]);
+        // Admin ends election immediately EVEN WHILE voting_ends_at countdown is still days in the future!
+        $admin = User::where('email', 'admin@sonit.nit.ac.tz')->firstOrFail();
+        $election->update(['voting_ends_at' => now()->addDays(4)]);
+        $this->assertTrue($election->fresh()->isVotingActive());
+
+        $this->actingAs($admin)->post("/admin/elections/{$election->id}/end")->assertRedirect();
+        $this->assertTrue($election->fresh()->isEnded());
+        $this->assertFalse($election->fresh()->isVotingActive());
+
+        // Election countdown timer is automatically deactivated
+        $this->assertEquals(0, TimerAnnouncement::where('category', 'election')->where('is_active', true)->count());
+
+        // Student can no longer vote even though scheduled voting_ends_at is still in the future
         $otherStudent = User::where('reg_no', 'NIT/BIT/2023/5012')->firstOrFail();
         $this->actingAs($otherStudent)->post('/elections/vote', [
             'position' => 'President',
             'candidate_id' => $president->id,
         ])->assertSessionHas('error');
         $this->assertDatabaseCount('votes', 2);
+
+        // Student dashboard renders President portrait + editable Motto
+        $dash = $this->actingAs($bltmStudent)->get('/dashboard');
+        $dash->assertStatus(200);
+        $dash->assertSee('images/portraits/president.jpg');
+        $dash->assertSee(SiteSetting::getValue('motto'));
     }
 
     public function test_notification_badge_unread_tracking_and_editable_motto_vision_mission(): void

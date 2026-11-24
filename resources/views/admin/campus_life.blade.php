@@ -1,13 +1,37 @@
 @extends('layouts.admin')
 
-@section('title', 'Events, Sports, Charity & Leaders — SONIT Admin')
-@section('page_title', 'Events, Sports, Charity & Leadership Management')
+@section('title', 'Events, Sports, Charity Tours & Leaders — SONIT Admin')
+@section('page_title', 'Events, Sports, Charity Tours & Leadership')
 
 @section('content')
 <div class="grid grid-2 mb-4" style="align-items:start;">
-    {{-- Add Event --}}
-    <div class="card">
-        <h2 style="margin:0 0 14px;font-size:18px;font-weight:800;color:var(--navy-900);">Publish Campus Event</h2>
+    {{-- Publish Charity / Tour Reminder --}}
+    <div class="card card-accent-red">
+        <h2 style="margin:0 0 12px;font-size:17px;font-weight:800;color:var(--nit-black);">Post Charity / Tour Contribution Reminder</h2>
+        <form method="POST" action="{{ route('admin.charity.store') }}">
+            @csrf
+            <div class="grid grid-2">
+                <div class="form-group"><label class="form-label">Campaign / Tour Title</label><input type="text" name="title" class="form-control" required></div>
+                <div class="form-group"><label class="form-label">Beneficiary / Destination</label><input type="text" name="beneficiary" class="form-control" required></div>
+            </div>
+            <div class="grid grid-2">
+                <div class="form-group"><label class="form-label">When (Date & Time)</label><input type="text" name="event_when" class="form-control" placeholder="e.g. Saturday, 12 Dec · 08:30 AM" required></div>
+                <div class="form-group"><label class="form-label">Where (Meeting Point / Location)</label><input type="text" name="event_where" class="form-control" placeholder="e.g. NIT Main Gate → Mabibo" required></div>
+            </div>
+            <div class="form-group"><label class="form-label">What We Plan To Do</label><textarea name="planned_activities" rows="2" class="form-control" placeholder="Key planned activities..." required></textarea></div>
+            <div class="form-group"><label class="form-label">Contribution Account Number / Lipa Namba</label><input type="text" name="account_number" class="form-control mono" placeholder="e.g. CRDB: 0150442198800 | M-Pesa Lipa: 5589021" required></div>
+            <div class="grid grid-2">
+                <div class="form-group"><label class="form-label">Coordinator Contacts</label><input type="text" name="contact_info" class="form-control" placeholder="+255 7XX XXX XXX" required></div>
+                <div class="form-group"><label class="form-label">Countdown Deadline</label><input type="datetime-local" name="ends_at" class="form-control"></div>
+            </div>
+            <div class="form-group"><label class="form-label">Short Overview</label><textarea name="description" rows="2" class="form-control" required></textarea></div>
+            <button type="submit" class="btn btn-danger btn-sm">Publish Reminder Notice</button>
+        </form>
+    </div>
+
+    {{-- Publish Campus Event --}}
+    <div class="card card-accent-blue">
+        <h2 style="margin:0 0 12px;font-size:17px;font-weight:800;color:var(--nit-black);">Publish Campus Event</h2>
         <form method="POST" action="{{ route('admin.events.store') }}">
             @csrf
             <div class="form-group"><label class="form-label">Event Title</label><input type="text" name="title" class="form-control" required></div>
@@ -29,10 +53,12 @@
             <button type="submit" class="btn btn-primary btn-sm">Publish Event</button>
         </form>
     </div>
+</div>
 
+<div class="grid grid-2" style="align-items:start;">
     {{-- Add Sports Team --}}
     <div class="card">
-        <h2 style="margin:0 0 14px;font-size:18px;font-weight:800;color:var(--navy-900);">Add Sports Club / Fixture</h2>
+        <h2 style="margin:0 0 12px;font-size:17px;font-weight:800;color:var(--nit-black);">Add Sports Club / Fixture</h2>
         <form method="POST" action="{{ route('admin.sports.store') }}">
             @csrf
             <div class="grid grid-2">
@@ -57,43 +83,10 @@
             <button type="submit" class="btn btn-primary btn-sm">Save Sports Club</button>
         </form>
     </div>
-</div>
-
-<div class="grid grid-2 mb-4" style="align-items:start;">
-    {{-- Launch Charity Campaign + Verify Pledges --}}
-    <div class="card">
-        <h2 style="margin:0 0 14px;font-size:18px;font-weight:800;color:var(--navy-900);">Launch Charity Drive</h2>
-        <form method="POST" action="{{ route('admin.charity.store') }}" class="mb-4">
-            @csrf
-            <div class="grid grid-2">
-                <div class="form-group"><label class="form-label">Campaign Title</label><input type="text" name="title" class="form-control" required></div>
-                <div class="form-group"><label class="form-label">Beneficiary</label><input type="text" name="beneficiary" class="form-control" required></div>
-            </div>
-            <div class="grid grid-2">
-                <div class="form-group"><label class="form-label">Target Amount (TZS)</label><input type="number" name="target_amount" class="form-control mono" value="3000000" required></div>
-                <div class="form-group"><label class="form-label">Ends At</label><input type="datetime-local" name="ends_at" class="form-control"></div>
-            </div>
-            <div class="form-group"><label class="form-label">Description</label><textarea name="description" rows="2" class="form-control" required></textarea></div>
-            <button type="submit" class="btn btn-gold btn-sm">Launch Charity Drive</button>
-        </form>
-
-        <h3 style="margin:0 0 10px;font-size:15px;font-weight:800;color:var(--navy-900);">Verify Pending Student Pledges</h3>
-        @foreach($campaigns as $camp)
-            @foreach($camp->contributions->where('status', 'pledged') as $pledge)
-                <div class="flex-between text-xs" style="padding:8px 0;border-bottom:1px solid var(--border);">
-                    <div><strong>{{ $pledge->donor_name }}</strong> · TZS {{ number_format($pledge->amount) }} ({{ $pledge->payment_reference ?? 'No Ref' }})</div>
-                    <form method="POST" action="{{ route('admin.charity.verify', $pledge) }}" style="margin:0;">
-                        @csrf
-                        <button type="submit" class="btn btn-emerald btn-sm">Verify & Add</button>
-                    </form>
-                </div>
-            @endforeach
-        @endforeach
-    </div>
 
     {{-- Add Leader --}}
     <div class="card">
-        <h2 style="margin:0 0 14px;font-size:18px;font-weight:800;color:var(--navy-900);">Add Cabinet / Institute Leader</h2>
+        <h2 style="margin:0 0 12px;font-size:17px;font-weight:800;color:var(--nit-black);">Add Cabinet / Institute Leader</h2>
         <form method="POST" action="{{ route('admin.leaders.store') }}" enctype="multipart/form-data">
             @csrf
             <div class="grid grid-2">
@@ -114,7 +107,7 @@
             </div>
             <div class="form-group"><label class="form-label">Short Bio</label><textarea name="bio" rows="2" class="form-control"></textarea></div>
             <div class="form-group"><label class="flex-center text-sm"><input type="checkbox" name="is_featured" value="1"> Feature on Homepage</label></div>
-            <button type="submit" class="btn btn-primary btn-sm">Add Leader</button>
+            <button type="submit" class="btn btn-black btn-sm">Add Leader</button>
         </form>
     </div>
 </div>

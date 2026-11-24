@@ -1,355 +1,246 @@
 @extends('layouts.app')
 
-@section('title', ($siteSettings['org_short_name'] ?? 'SONIT') . ' — Digital Student Governance Portal | NIT')
+@section('title', ($siteSettings['org_short_name'] ?? 'SONIT') . ' — National Institute of Transport Portal')
 
 @section('content')
-    {{-- Cinematic Hero Section featuring edited NIT Main Gate --}}
-    <section class="hero">
-        <div class="hero-bg" style="background-image:url('{{ asset('images/campus/hero_gate.jpg') }}');"></div>
-        <div class="hero-overlay"></div>
-        <div class="container hero-grid">
-            <div>
-                <div class="hero-eyebrow">{{ $siteSettings['institution_name'] ?? 'National Institute of Transport (NIT)' }} · Est. {{ $siteSettings['founded_year'] ?? '1983' }}</div>
-                <h1>{{ $siteSettings['org_name'] ?? 'Students Organization of the National Institute of Transport' }}</h1>
-                <p class="hero-lead">{{ $siteSettings['tagline'] ?? 'Empowering Tomorrow\'s Transport, Logistics, Aviation & Engineering Leaders.' }}</p>
+    @php
+        $president = $featuredLeaders->first(fn ($l) => $l->category === 'executive' && str_contains($l->position, 'President'))
+            ?? $featuredLeaders->first();
+    @endphp
 
-                <div class="hero-actions">
-                    <a href="{{ route('communities.index') }}" class="btn btn-gold btn-lg">Explore Course Communities</a>
-                    <a href="{{ route('elections.index') }}" class="btn btn-ghost-light btn-lg">E-Elections Portal</a>
+    {{-- Compact Executive Hero: NIT Main Gate + President Portrait + Editable Motto --}}
+    <div style="position:relative;background:var(--nit-black);color:#FFFFFF;border-top:4px solid var(--nit-blue);border-bottom:3px solid var(--nit-red);overflow:hidden;margin-bottom:18px;">
+        <div style="position:absolute;inset:0;background-image:url('{{ asset('images/campus/hero_gate.jpg') }}');background-size:cover;background-position:center;opacity:0.22;"></div>
+        <div style="position:relative;z-index:2;padding:22px 24px;display:grid;grid-template-columns:136px minmax(0,1fr) 260px;gap:20px;align-items:center;" class="home-hero-responsive">
+            <img src="{{ asset($president?->photo ?? 'images/portraits/president.jpg') }}" alt="{{ $president?->name ?? 'SONIT President' }}" class="president-banner-photo" style="width:136px;height:152px;">
+
+            <div>
+                <div class="flex-center flex-wrap mb-1" style="gap:6px;">
+                    <span class="badge" style="background:var(--nit-blue);color:#fff;">{{ $siteSettings['org_short_name'] ?? 'SONIT' }} · NIT</span>
+                    <span class="badge badge-crimson">{{ $president?->position ?? 'SONIT President' }}</span>
+                </div>
+                <h1 style="margin:4px 0 6px;font-size:clamp(20px,2.4vw,27px);font-weight:800;line-height:1.15;color:#FFFFFF;">
+                    "{{ $siteSettings['motto'] ?? 'Unity, Integrity, and Academic Excellence in Motion.' }}"
+                </h1>
+                <p style="margin:0 0 12px;font-size:13px;color:#D4DCE6;">
+                    <strong>{{ $president?->name ?? 'Hon. Stavius Alkadi' }}</strong> — {{ $siteSettings['tagline'] ?? 'Empowering Tomorrow\'s Transport, Logistics, Aviation & Engineering Leaders.' }}
+                </p>
+                <div class="flex-center flex-wrap" style="gap:8px;">
+                    <a href="{{ route('communities.index') }}" class="btn btn-primary btn-sm">Course Communities ({{ $stats['courses'] }})</a>
+                    <a href="{{ route('elections.index') }}" class="btn btn-danger btn-sm">E-Elections Portal</a>
+                    <a href="{{ route('help-desk.index') }}" class="btn btn-ghost-light btn-sm">Student Help Desk</a>
                     @guest
-                        <a href="{{ route('login') }}" class="btn btn-ghost-light btn-lg">Student Sign In</a>
+                        <a href="{{ route('login') }}" class="btn btn-ghost-light btn-sm">Sign In</a>
+                    @else
+                        <a href="{{ route('dashboard') }}" class="btn btn-ghost-light btn-sm">My Dashboard</a>
                     @endguest
                 </div>
+            </div>
 
-                <div class="hero-metrics">
-                    <div class="hero-metric">
-                        <strong>{{ $stats['courses'] }}</strong>
-                        <span>NIT Programmes</span>
+            <div style="background:rgba(17,19,23,0.82);border:1px solid rgba(0,149,218,0.45);padding:12px 14px;">
+                <div class="text-xs" style="color:var(--nit-blue);font-weight:800;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Campus Live Snapshot</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                    <div style="background:rgba(255,255,255,0.06);padding:8px;">
+                        <strong class="mono" style="font-size:18px;color:#fff;display:block;">{{ $stats['courses'] }}</strong>
+                        <span class="text-xs" style="color:#9BA5B4;">NIT Courses</span>
                     </div>
-                    <div class="hero-metric">
-                        <strong>{{ $stats['communities'] }}</strong>
-                        <span>Active Channels</span>
+                    <div style="background:rgba(255,255,255,0.06);padding:8px;">
+                        <strong class="mono" style="font-size:18px;color:#fff;display:block;">{{ $stats['communities'] }}</strong>
+                        <span class="text-xs" style="color:#9BA5B4;">Channels</span>
                     </div>
-                    <div class="hero-metric">
-                        <strong>{{ $stats['venues'] }}</strong>
-                        <span>Campus Venues</span>
+                    <div style="background:rgba(255,255,255,0.06);padding:8px;">
+                        <strong class="mono" style="font-size:18px;color:#fff;display:block;">{{ $stats['venues'] }}</strong>
+                        <span class="text-xs" style="color:#9BA5B4;">Venues</span>
                     </div>
-                    <div class="hero-metric">
-                        <strong>{{ $stats['accommodations'] }}</strong>
-                        <span>Verified Hostels</span>
+                    <div style="background:rgba(255,255,255,0.06);padding:8px;">
+                        <strong class="mono" style="font-size:18px;color:#fff;display:block;">{{ $stats['accommodations'] }}</strong>
+                        <span class="text-xs" style="color:#9BA5B4;">Hostels</span>
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <div class="hero-card">
-                <img src="{{ asset('images/campus/coeato.jpg') }}" alt="NIT Center of Excellence in Aviation and Transport Operations" class="hero-card-photo">
-                <div class="flex-between mb-2">
-                    <span class="badge badge-gold">Live Governance Hub</span>
-                    @if($activeElection && $activeElection->isVotingActive())
-                        <span class="badge badge-emerald">Voting Open</span>
+    {{-- Active Charity / Tour Reminder Spotlight (What, Where, When, Account & Contacts — No in-system payment) --}}
+    @if($featuredCharity)
+        <div class="card card-accent-red mb-4">
+            <div class="flex-between flex-wrap mb-2">
+                <div class="flex-center">
+                    <span class="badge badge-crimson">Charity & Tour Reminder</span>
+                    <strong style="font-size:16px;color:var(--nit-black);">{{ $featuredCharity->title }}</strong>
+                </div>
+                <div class="flex-center">
+                    @if($featuredCharity->ends_at)
+                        <div class="countdown-clock" data-countdown="{{ $featuredCharity->ends_at->toIso8601String() }}">
+                            <span class="badge badge-black mono"><span data-cd-days>00</span>d : <span data-cd-hours>00</span>h : <span data-cd-mins>00</span>m : <span data-cd-secs>00</span>s</span>
+                        </div>
                     @endif
+                    <a href="{{ route('charity.index') }}" class="btn btn-outline btn-sm">All Charity & Tours</a>
                 </div>
-                <h3 style="margin:0 0 8px;font-size:19px;font-weight:800;color:#FFFFFF;">
-                    {{ $siteSettings['motto'] ?? 'Unity, Integrity, and Academic Excellence in Motion.' }}
-                </h3>
-                <p style="margin:0 0 18px;font-size:13.5px;color:#CBD5E1;">
-                    Unified digital governance for Mabibo Campus: course-scoped communities, transparent single-ballot elections, verified accommodation, campus venue booking, and 24/7 welfare support.
-                </p>
-                <div class="flex-between flex-wrap" style="gap:10px;">
-                    <a href="{{ route('help-desk.index') }}" class="btn btn-gold btn-sm">Open Help Desk</a>
-                    <a href="{{ route('accommodations.index') }}" class="btn btn-ghost-light btn-sm">Find Accommodation</a>
+            </div>
+
+            <div class="notice-grid">
+                <div class="notice-box">
+                    <div class="notice-label">What We Plan To Do</div>
+                    <div class="text-xs" style="color:var(--ink-900);white-space:pre-line;">{{ $featuredCharity->planned_activities ?? $featuredCharity->description }}</div>
+                </div>
+                <div class="notice-box">
+                    <div class="notice-label">Where & When</div>
+                    <div class="text-xs" style="color:var(--ink-900);"><strong>When:</strong> {{ $featuredCharity->event_when ?? optional($featuredCharity->ends_at)->format('d M Y · H:i') }}</div>
+                    <div class="text-xs mt-1" style="color:var(--ink-900);"><strong>Where:</strong> {{ $featuredCharity->event_where ?? $featuredCharity->beneficiary }}</div>
+                </div>
+                <div class="notice-box is-account">
+                    <div class="notice-label">Official Contribution Account Number</div>
+                    <div class="flex-between flex-wrap" style="gap:6px;">
+                        <strong class="mono text-xs" style="color:var(--nit-black);">{{ $featuredCharity->account_number ?? $featuredCharity->payment_instructions }}</strong>
+                        @if($featuredCharity->account_number)
+                            <button type="button" class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:11px;" data-copy-text="{{ $featuredCharity->account_number }}">Copy Account</button>
+                        @endif
+                    </div>
+                </div>
+                <div class="notice-box">
+                    <div class="notice-label">Coordinator Contacts</div>
+                    <div class="text-xs mono" style="color:var(--nit-black);font-weight:700;">{{ $featuredCharity->contact_info ?? ($siteSettings['phone'] ?? '+255 22 240 0148') }}</div>
                 </div>
             </div>
         </div>
-    </section>
+    @endif
 
-    {{-- Editable Motto, Vision & Mission Pillars --}}
-    <section class="section section-alt">
-        <div class="container">
-            <div class="section-header">
-                <div>
-                    <span class="kicker">Institutional Identity</span>
-                    <h2 class="section-title">Motto, Vision & Mission</h2>
-                    <p class="section-subtitle">Guided by transparent student governance and continuously maintained by the SONIT Executive Cabinet.</p>
-                </div>
-                @auth
-                    @if(auth()->user()->isAdmin())
-                        <a href="{{ route('admin.settings') }}" class="btn btn-outline btn-sm">Edit Identity in Admin</a>
-                    @endif
-                @endauth
+    {{-- Compact Tabbed Hub (Eliminates Long Vertical Scrolling!) --}}
+    <div class="card card-accent-blue" data-tab-group>
+        <div class="flex-between flex-wrap mb-2">
+            <div class="tab-bar" style="margin-bottom:0;border-bottom:none;">
+                <button type="button" class="tab-btn active" data-tab-target="announcements">Latest Announcements ({{ $announcements->count() }})</button>
+                <button type="button" class="tab-btn" data-tab-target="leadership">Executive Leadership</button>
+                <button type="button" class="tab-btn" data-tab-target="identity">Motto, Vision & Mission</button>
+                <button type="button" class="tab-btn" data-tab-target="courses">NIT Course Channels ({{ $stats['courses'] }})</button>
             </div>
-
-            <div class="grid grid-3">
-                <article class="card card-hover">
-                    <div class="flex-center mb-3">
-                        <div class="icon-3d-tile sm"><img src="{{ asset('images/icons/leadership.svg') }}" alt="Motto"></div>
-                        <div>
-                            <span class="kicker" style="margin:0;">Guiding Principle</span>
-                            <h3 style="margin:0;font-size:18px;font-weight:800;color:var(--navy-900);">Our Motto</h3>
-                        </div>
-                    </div>
-                    <p style="font-size:16px;font-weight:700;color:var(--navy-700);margin:0 0 10px;">
-                        "{{ $siteSettings['motto'] ?? 'Unity, Integrity, and Academic Excellence in Motion.' }}"
-                    </p>
-                    <p class="text-sm muted" style="margin:0;">{{ $siteSettings['history'] ?? '' }}</p>
-                </article>
-
-                <article class="card card-hover">
-                    <div class="flex-center mb-3">
-                        <div class="icon-3d-tile sm"><img src="{{ asset('images/icons/security.svg') }}" alt="Vision"></div>
-                        <div>
-                            <span class="kicker" style="margin:0;">Strategic Horizon</span>
-                            <h3 style="margin:0;font-size:18px;font-weight:800;color:var(--navy-900);">Our Vision</h3>
-                        </div>
-                    </div>
-                    <p style="font-size:14.5px;color:var(--ink-700);margin:0;">
-                        {{ $siteSettings['vision'] ?? '' }}
-                    </p>
-                </article>
-
-                <article class="card card-hover">
-                    <div class="flex-center mb-3">
-                        <div class="icon-3d-tile sm"><img src="{{ asset('images/icons/announcements.jpg') }}" alt="Mission"></div>
-                        <div>
-                            <span class="kicker" style="margin:0;">Daily Mandate</span>
-                            <h3 style="margin:0;font-size:18px;font-weight:800;color:var(--navy-900);">Our Mission</h3>
-                        </div>
-                    </div>
-                    <p style="font-size:14.5px;color:var(--ink-700);margin:0;">
-                        {{ $siteSettings['mission'] ?? '' }}
-                    </p>
-                </article>
+            <div class="flex-center">
+                @if($activeElection && $activeElection->isVotingActive())
+                    <a href="{{ route('elections.index') }}" class="btn btn-danger btn-sm">Voting Open Now</a>
+                @endif
             </div>
         </div>
-    </section>
-
-    {{-- Executive Leadership Showcase (Edited Cinematic Portraits: Rector, President, Vice President) --}}
-    <section class="section">
-        <div class="container">
-            <div class="section-header">
-                <div>
-                    <span class="kicker">Leadership & Governance</span>
-                    <h2 class="section-title">Institute & SONIT Executive Leadership</h2>
-                    <p class="section-subtitle">Working in partnership with National Institute of Transport management to deliver world-class student services.</p>
-                </div>
-                <a href="{{ route('leadership') }}" class="btn btn-outline">Full Leadership Directory</a>
-            </div>
-
-            <div class="grid grid-3">
-                @foreach($featuredLeaders as $leader)
-                    <article class="portrait-card">
-                        <div class="portrait-frame">
-                            <img src="{{ asset($leader->photo ?? 'images/portraits/president.jpg') }}" alt="{{ $leader->name }}">
-                        </div>
-                        <div class="portrait-body">
-                            <div class="portrait-role">{{ $leader->position }}</div>
-                            <h3 class="portrait-name">{{ $leader->name }}</h3>
-                            @if($leader->quote)
-                                <p class="portrait-quote">"{{ $leader->quote }}"</p>
-                            @endif
-                            <p class="text-sm muted" style="margin:0;">{{ \Illuminate\Support\Str::limit($leader->bio, 130) }}</p>
-                        </div>
-                    </article>
-                @endforeach
-            </div>
-        </div>
-    </section>
-
-    {{-- Smart Digital Ecosystem Grid (100% Custom 3D Studio Icons, Zero Emojis) --}}
-    <section class="section section-alt">
-        <div class="container">
-            <div class="section-header">
-                <div>
-                    <span class="kicker">Unified Campus Platform</span>
-                    <h2 class="section-title">Every Service an NIT Student Needs</h2>
-                    <p class="section-subtitle">Engineered with strict role-based security, real-time transparency, and mobile-first ergonomics.</p>
-                </div>
-            </div>
-
-            <div class="grid grid-4">
-                <a href="{{ route('communities.index') }}" class="card card-hover" style="display:block;">
-                    <div class="icon-3d-tile mb-3"><img src="{{ asset('images/icons/communities.jpg') }}" alt="Communities"></div>
-                    <h3 style="margin:0 0 8px;font-size:17px;font-weight:800;color:var(--navy-900);">Course Communities</h3>
-                    <p class="text-sm muted" style="margin:0;">Default official channels for all {{ $stats['courses'] }} NIT courses plus CR-created study groups and general campus squares.</p>
-                </a>
-
-                <a href="{{ route('elections.index') }}" class="card card-hover" style="display:block;">
-                    <div class="icon-3d-tile mb-3"><img src="{{ asset('images/icons/elections.jpg') }}" alt="Elections"></div>
-                    <h3 style="margin:0 0 8px;font-size:17px;font-weight:800;color:var(--navy-900);">E-Elections</h3>
-                    <p class="text-sm muted" style="margin:0;">Verified single-ballot voting for President & Course Parliament Representatives with live transparent tallying.</p>
-                </a>
-
-                <a href="{{ route('accommodations.index') }}" class="card card-hover" style="display:block;">
-                    <div class="icon-3d-tile mb-3"><img src="{{ asset('images/icons/accommodation.svg') }}" alt="Accommodation"></div>
-                    <h3 style="margin:0 0 8px;font-size:17px;font-weight:800;color:var(--navy-900);">Accommodation</h3>
-                    <p class="text-sm muted" style="margin:0;">Browse on-campus hostels and SONIT-verified Mabibo/Ubungo residences with direct placement applications.</p>
-                </a>
-
-                <a href="{{ route('help-desk.index') }}" class="card card-hover" style="display:block;">
-                    <div class="icon-3d-tile mb-3"><img src="{{ asset('images/icons/helpdesk.jpg') }}" alt="Help Desk"></div>
-                    <h3 style="margin:0 0 8px;font-size:17px;font-weight:800;color:var(--navy-900);">Student Help Desk</h3>
-                    <p class="text-sm muted" style="margin:0;">Trackable tickets for HESLB loans, SIMS clearance, welfare, IT support, and confidential grievances.</p>
-                </a>
-
-                <a href="{{ route('venues.index') }}" class="card card-hover" style="display:block;">
-                    <div class="icon-3d-tile mb-3"><img src="{{ asset('images/icons/venues.jpg') }}" alt="Venues"></div>
-                    <h3 style="margin:0 0 8px;font-size:17px;font-weight:800;color:var(--navy-900);">Campus Venues</h3>
-                    <p class="text-sm muted" style="margin:0;">Explore MPH, CoEATO Auditorium, ICT Labs, and lecture theatres with online reservation approval.</p>
-                </a>
-
-                <a href="{{ route('lost-found.index') }}" class="card card-hover" style="display:block;">
-                    <div class="icon-3d-tile mb-3"><img src="{{ asset('images/icons/lostfound.svg') }}" alt="Lost and Found"></div>
-                    <h3 style="margin:0 0 8px;font-size:17px;font-weight:800;color:var(--navy-900);">Lost & Found</h3>
-                    <p class="text-sm muted" style="margin:0;">Report misplaced ID cards, electronics, or documents and verify handover cleanly through SONIT Desk.</p>
-                </a>
-
-                <a href="{{ route('sports.index') }}" class="card card-hover" style="display:block;">
-                    <div class="icon-3d-tile mb-3"><img src="{{ asset('images/icons/sports.svg') }}" alt="Sports"></div>
-                    <h3 style="margin:0 0 8px;font-size:17px;font-weight:800;color:var(--navy-900);">Sports & Athletics</h3>
-                    <p class="text-sm muted" style="margin:0;">Join NIT varsity squads, follow Inter-Faculty Transport Cup fixtures, and view match standings.</p>
-                </a>
-
-                <a href="{{ route('charity.index') }}" class="card card-hover" style="display:block;">
-                    <div class="icon-3d-tile mb-3"><img src="{{ asset('images/icons/charity.svg') }}" alt="Charity"></div>
-                    <h3 style="margin:0 0 8px;font-size:17px;font-weight:800;color:var(--navy-900);">Charity & Welfare</h3>
-                    <p class="text-sm muted" style="margin:0;">Support student solidarity funds and Mabibo community drives with live verified fundraising totals.</p>
-                </a>
-            </div>
-        </div>
-    </section>
-
-    {{-- Real NIT Course Communities Preview --}}
-    <section class="section">
-        <div class="container">
-            <div class="section-header">
-                <div>
-                    <span class="kicker">Academic Communities</span>
-                    <h2 class="section-title">Default Channels for Every NIT Programme</h2>
-                    <p class="section-subtitle">Every NIT course automatically holds an official community with a dedicated Class Representative seat. Even before a CR registers, SONIT Admins govern the channel seamlessly.</p>
-                </div>
-                <a href="{{ route('communities.index') }}" class="btn btn-primary">Browse All {{ $stats['courses'] }} Courses</a>
-            </div>
-
-            <div class="grid grid-4">
-                @foreach($coursesPreview as $course)
-                    @php $comm = $course->defaultCommunity; @endphp
-                    <div class="card card-hover" style="display:flex;flex-direction:column;justify-content:space-between;">
-                        <div>
-                            <div class="flex-between mb-2">
-                                <span class="badge badge-navy mono">{{ $course->code }}</span>
-                                <span class="badge badge-slate">{{ $course->levelLabel() }}</span>
-                            </div>
-                            <h3 style="margin:0 0 8px;font-size:15.5px;font-weight:800;color:var(--navy-900);line-height:1.35;">{{ $course->name }}</h3>
-                            <p class="text-xs muted" style="margin:0 0 14px;">{{ $course->faculty }}</p>
-                        </div>
-                        <div style="border-top:1px solid var(--border);padding-top:12px;">
-                            @if($comm && $comm->cr)
-                                <div class="text-xs" style="color:var(--emerald-700);font-weight:700;margin-bottom:8px;">
-                                    CR Assigned: {{ $comm->cr->name }}
-                                </div>
-                            @else
-                                <div class="text-xs" style="color:var(--amber-700);font-weight:700;margin-bottom:8px;">
-                                    CR Seat Reserved · Admin Managed
-                                </div>
-                            @endif
-                            @if($comm)
-                                <a href="{{ route('communities.show', $comm) }}" class="btn btn-outline btn-sm" style="width:100%;">Enter Channel</a>
-                            @endif
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    </section>
-
-    {{-- Active Charity & Countdown Highlight + Latest Announcements --}}
-    <section class="section section-alt">
-        <div class="container">
-            <div class="grid grid-2" style="align-items:start;">
-                <div>
-                    <div class="flex-between mb-3">
-                        <div>
-                            <span class="kicker">Campus Broadcasts</span>
-                            <h2 class="section-title" style="font-size:26px;">Latest Announcements</h2>
-                        </div>
-                        <a href="{{ route('announcements.index') }}" class="btn btn-outline btn-sm">View All</a>
-                    </div>
-
-                    <div style="display:flex;flex-direction:column;gap:14px;">
+        <div style="border-top:2px solid var(--border);padding-top:14px;">
+            {{-- Tab 1: Latest Announcements & Quick Services --}}
+            <div class="tab-panel active" data-tab-panel="announcements">
+                <div class="grid grid-2">
+                    <div style="display:flex;flex-direction:column;gap:10px;">
                         @foreach($announcements as $item)
-                            <a href="{{ route('announcements.show', $item) }}" class="card card-hover" style="padding:18px;display:block;">
-                                <div class="flex-between mb-2">
+                            <a href="{{ route('announcements.show', $item) }}" style="padding:12px 14px;border:1px solid var(--border);border-left:3px solid {{ $item->is_urgent ? 'var(--nit-red)' : 'var(--nit-blue)' }};background:#fff;display:block;">
+                                <div class="flex-between mb-1">
                                     <div class="flex-center">
-                                        @if($item->is_urgent)
-                                            <span class="badge badge-crimson">Urgent</span>
-                                        @endif
+                                        @if($item->is_urgent)<span class="badge badge-crimson">Urgent</span>@endif
                                         <span class="badge badge-navy">{{ ucfirst($item->category) }}</span>
                                     </div>
                                     <span class="text-xs muted">{{ optional($item->published_at)->diffForHumans() }}</span>
                                 </div>
-                                <h3 style="margin:0 0 6px;font-size:16px;font-weight:800;color:var(--navy-900);">{{ $item->title }}</h3>
-                                <p class="text-sm muted" style="margin:0;">{{ \Illuminate\Support\Str::limit($item->excerpt ?? strip_tags($item->content), 120) }}</p>
+                                <strong style="color:var(--nit-black);font-size:14px;display:block;">{{ $item->title }}</strong>
+                                <span class="text-xs muted">{{ \Illuminate\Support\Str::limit($item->excerpt ?? strip_tags($item->content), 100) }}</span>
                             </a>
                         @endforeach
+                        <a href="{{ route('announcements.index') }}" class="btn btn-outline btn-sm" style="align-self:flex-start;">Browse All Announcements</a>
+                    </div>
+
+                    <div>
+                        <div class="kicker">Quick Access Student Services</div>
+                        <div class="grid grid-2" style="gap:10px;">
+                            <a href="{{ route('accommodations.index') }}" class="card card-hover" style="padding:12px;display:flex;align-items:center;gap:10px;">
+                                <div class="icon-3d-tile sm"><img src="{{ asset('images/icons/accommodation.svg') }}" alt=""></div>
+                                <div><strong style="color:var(--nit-black);font-size:13px;display:block;">Accommodation</strong><span class="text-xs muted">Hostels & Mabibo</span></div>
+                            </a>
+                            <a href="{{ route('venues.index') }}" class="card card-hover" style="padding:12px;display:flex;align-items:center;gap:10px;">
+                                <div class="icon-3d-tile sm"><img src="{{ asset('images/icons/venues.jpg') }}" alt=""></div>
+                                <div><strong style="color:var(--nit-black);font-size:13px;display:block;">Campus Venues</strong><span class="text-xs muted">Book MPH & Labs</span></div>
+                            </a>
+                            <a href="{{ route('help-desk.index') }}" class="card card-hover" style="padding:12px;display:flex;align-items:center;gap:10px;">
+                                <div class="icon-3d-tile sm"><img src="{{ asset('images/icons/helpdesk.jpg') }}" alt=""></div>
+                                <div><strong style="color:var(--nit-black);font-size:13px;display:block;">Help Desk</strong><span class="text-xs muted">HESLB, SIMS, Welfare</span></div>
+                            </a>
+                            <a href="{{ route('lost-found.index') }}" class="card card-hover" style="padding:12px;display:flex;align-items:center;gap:10px;">
+                                <div class="icon-3d-tile sm"><img src="{{ asset('images/icons/lostfound.svg') }}" alt=""></div>
+                                <div><strong style="color:var(--nit-black);font-size:13px;display:block;">Lost & Found</strong><span class="text-xs muted">IDs & Campus Items</span></div>
+                            </a>
+                            <a href="{{ route('sports.index') }}" class="card card-hover" style="padding:12px;display:flex;align-items:center;gap:10px;">
+                                <div class="icon-3d-tile sm"><img src="{{ asset('images/icons/sports.svg') }}" alt=""></div>
+                                <div><strong style="color:var(--nit-black);font-size:13px;display:block;">Sports & Clubs</strong><span class="text-xs muted">Fixtures & Trials</span></div>
+                            </a>
+                            <a href="{{ route('events.index') }}" class="card card-hover" style="padding:12px;display:flex;align-items:center;gap:10px;">
+                                <div class="icon-3d-tile sm"><img src="{{ asset('images/icons/events.svg') }}" alt=""></div>
+                                <div><strong style="color:var(--nit-black);font-size:13px;display:block;">Events Calendar</strong><span class="text-xs muted">{{ $upcomingEvents->count() }} Upcoming</span></div>
+                            </a>
+                        </div>
                     </div>
                 </div>
+            </div>
 
-                <div>
-                    <div class="flex-between mb-3">
-                        <div>
-                            <span class="kicker">Social Impact & Events</span>
-                            <h2 class="section-title" style="font-size:26px;">Featured Initiative</h2>
-                        </div>
-                        <a href="{{ route('charity.index') }}" class="btn btn-outline btn-sm">All Charity Drives</a>
-                    </div>
-
-                    @if($featuredCharity)
-                        <div class="card" style="overflow:hidden;padding:0;">
-                            <img src="{{ asset($featuredCharity->image ?? 'images/campus/students.jpg') }}" alt="{{ $featuredCharity->title }}" style="width:100%;height:220px;object-fit:cover;">
-                            <div style="padding:22px;">
-                                <div class="flex-between mb-2">
-                                    <span class="badge badge-gold">Active Charity Drive</span>
-                                    <span class="mono text-xs" style="font-weight:700;color:var(--navy-700);">{{ $featuredCharity->progressPercent() }}% Funded</span>
-                                </div>
-                                <h3 style="margin:0 0 8px;font-size:19px;font-weight:800;color:var(--navy-900);">{{ $featuredCharity->title }}</h3>
-                                <p class="text-sm muted" style="margin:0 0 14px;">{{ $featuredCharity->description }}</p>
-
-                                <div class="progress-track mb-2">
-                                    <div class="progress-fill" style="width:{{ $featuredCharity->progressPercent() }}%;"></div>
-                                </div>
-                                <div class="flex-between text-sm mb-3">
-                                    <strong class="mono" style="color:var(--navy-900);">TZS {{ number_format($featuredCharity->raised_amount) }}</strong>
-                                    <span class="muted">Goal: TZS {{ number_format($featuredCharity->target_amount) }}</span>
-                                </div>
-
-                                <div class="flex-between flex-wrap" style="gap:10px;">
-                                    <a href="{{ route('charity.index') }}" class="btn btn-primary">Support Campaign</a>
-                                    <a href="{{ route('events.index') }}" class="btn btn-outline">Upcoming Events ({{ $upcomingEvents->count() }})</a>
-                                </div>
+            {{-- Tab 2: Official Leadership Portraits (Rector, President, Vice President) --}}
+            <div class="tab-panel" data-tab-panel="leadership">
+                <div class="grid grid-3">
+                    @foreach($featuredLeaders as $leader)
+                        <article class="portrait-card">
+                            <div class="portrait-frame">
+                                <img src="{{ asset($leader->photo ?? 'images/portraits/president.jpg') }}" alt="{{ $leader->name }}">
                             </div>
-                        </div>
-                    @endif
+                            <div class="portrait-body">
+                                <div class="portrait-role">{{ $leader->position }}</div>
+                                <h3 class="portrait-name">{{ $leader->name }}</h3>
+                                @if($leader->quote)<p class="portrait-quote">"{{ $leader->quote }}"</p>@endif
+                                <p class="text-xs muted" style="margin:0;">{{ \Illuminate\Support\Str::limit($leader->bio, 110) }}</p>
+                            </div>
+                        </article>
+                    @endforeach
+                </div>
+                <div class="mt-3"><a href="{{ route('leadership') }}" class="btn btn-outline btn-sm">View Full Cabinet & Leadership Directory</a></div>
+            </div>
+
+            {{-- Tab 3: Editable Motto, Vision & Mission --}}
+            <div class="tab-panel" data-tab-panel="identity">
+                <div class="grid grid-3">
+                    <div class="card card-accent-red">
+                        <span class="kicker">Motto</span>
+                        <h3 style="margin:0 0 8px;font-size:16px;color:var(--nit-black);">"{{ $siteSettings['motto'] ?? '' }}"</h3>
+                        <p class="text-xs muted" style="margin:0;">{{ $siteSettings['history'] ?? '' }}</p>
+                    </div>
+                    <div class="card card-accent-blue">
+                        <span class="kicker">Vision</span>
+                        <p class="text-sm" style="margin:0;color:var(--ink-700);">{{ $siteSettings['vision'] ?? '' }}</p>
+                    </div>
+                    <div class="card card-accent-black">
+                        <span class="kicker">Mission</span>
+                        <p class="text-sm" style="margin:0;color:var(--ink-700);">{{ $siteSettings['mission'] ?? '' }}</p>
+                    </div>
                 </div>
             </div>
-        </div>
-    </section>
 
-    {{-- Institutional CTA Banner --}}
-    <section class="section section-navy">
-        <div class="container flex-between flex-wrap" style="gap:24px;">
-            <div style="max-width:680px;">
-                <span class="kicker">Built for Transparency & Scale</span>
-                <h2 class="section-title">Ready to Experience Next-Generation Student Governance?</h2>
-                <p class="section-subtitle">Join your official NIT course community, participate in verified electronic elections, or explore the Super Admin Role Governance Console.</p>
-            </div>
-            <div class="flex-center flex-wrap">
-                @auth
-                    <a href="{{ route('dashboard') }}" class="btn btn-gold btn-lg">Open My Portal</a>
-                @else
-                    <a href="{{ route('register') }}" class="btn btn-gold btn-lg">Register as NIT Student</a>
-                    <a href="{{ route('login') }}" class="btn btn-ghost-light btn-lg">Sign In</a>
-                @endauth
+            {{-- Tab 4: NIT Course Communities Preview --}}
+            <div class="tab-panel" data-tab-panel="courses">
+                <div class="grid grid-4">
+                    @foreach($coursesPreview as $course)
+                        @php $comm = $course->defaultCommunity; @endphp
+                        <div class="card" style="padding:12px;">
+                            <div class="flex-between mb-1">
+                                <span class="badge badge-black mono">{{ $course->code }}</span>
+                                <span class="text-xs muted">{{ $course->levelLabel() }}</span>
+                            </div>
+                            <strong style="font-size:13px;color:var(--nit-black);display:block;margin-bottom:6px;">{{ \Illuminate\Support\Str::limit($course->name, 52) }}</strong>
+                            <div class="text-xs mb-2" style="color:{{ ($comm && $comm->cr) ? 'var(--emerald-700)' : 'var(--nit-red-dark)' }};font-weight:700;">
+                                {{ ($comm && $comm->cr) ? 'CR: '.$comm->cr->name : 'CR Vacant · Admin Managed' }}
+                            </div>
+                            @if($comm)
+                                <a href="{{ route('communities.show', $comm) }}" class="btn btn-outline btn-sm" style="width:100%;">Open Channel</a>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+                <div class="mt-3"><a href="{{ route('communities.index') }}" class="btn btn-primary btn-sm">Explore All {{ $stats['courses'] }} Course Communities</a></div>
             </div>
         </div>
-    </section>
+    </div>
+
+    <style>
+        @media (max-width: 960px) {
+            .home-hero-responsive { grid-template-columns: 1fr !important; }
+        }
+    </style>
 @endsection

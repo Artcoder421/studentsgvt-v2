@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Live Countdown Clocks (Top Timer Banners + Charity Cards)
+    // 1. Live Countdown Clocks
     const clocks = document.querySelectorAll('[data-countdown]');
-
     const updateClocks = () => {
         const now = Date.now();
         clocks.forEach((clock) => {
@@ -30,16 +29,48 @@ document.addEventListener('DOMContentLoaded', () => {
         setInterval(updateClocks, 1000);
     }
 
-    // 2. Mobile Navigation Drawer
+    // 2. Centralized Student Sidebar Mobile Drawer
     const menuBtn = document.getElementById('mobileMenuBtn');
-    const navLinks = document.getElementById('primaryNavLinks');
-    if (menuBtn && navLinks) {
-        menuBtn.addEventListener('click', () => {
-            navLinks.classList.toggle('open');
-        });
+    const sidebar = document.getElementById('portalSidebar');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    if (menuBtn && sidebar && backdrop) {
+        const toggleDrawer = () => {
+            sidebar.classList.toggle('open');
+            backdrop.classList.toggle('open');
+        };
+        menuBtn.addEventListener('click', toggleDrawer);
+        backdrop.addEventListener('click', toggleDrawer);
     }
 
-    // 3. Community Reply-To Selection
+    // 3. Compact Identity / Overview Tab Switcher
+    document.querySelectorAll('[data-tab-group]').forEach((group) => {
+        const buttons = group.querySelectorAll('[data-tab-target]');
+        const panels = group.querySelectorAll('[data-tab-panel]');
+        buttons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const target = btn.getAttribute('data-tab-target');
+                buttons.forEach((b) => b.classList.toggle('active', b === btn));
+                panels.forEach((p) => p.classList.toggle('active', p.getAttribute('data-tab-panel') === target));
+            });
+        });
+    });
+
+    // 4. Copy Account Number / Contact Helper
+    document.querySelectorAll('[data-copy-text]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+            const text = btn.getAttribute('data-copy-text');
+            try {
+                await navigator.clipboard.writeText(text);
+                const orig = btn.textContent;
+                btn.textContent = 'Copied';
+                setTimeout(() => { btn.textContent = orig; }, 1600);
+            } catch (e) {
+                // fallback silently
+            }
+        });
+    });
+
+    // 5. Community Reply-To Selection
     document.querySelectorAll('[data-reply-id]').forEach((btn) => {
         btn.addEventListener('click', () => {
             const replyInput = document.getElementById('replyToInput');
@@ -65,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 4. Demo Role Quick-Fill on Login Page (for investor/evaluator preview)
+    // 6. Demo Role Quick-Fill on Login Page
     document.querySelectorAll('[data-demo-login]').forEach((btn) => {
         btn.addEventListener('click', () => {
             const idInput = document.getElementById('identifier');
@@ -78,7 +109,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // 5. Auto-scroll chat feed to latest message
     const chatFeed = document.getElementById('communityChatFeed');
     if (chatFeed) {
         chatFeed.scrollTop = chatFeed.scrollHeight;
