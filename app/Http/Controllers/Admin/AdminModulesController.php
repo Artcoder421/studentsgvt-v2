@@ -118,7 +118,24 @@ class AdminModulesController extends Controller
             'results_published' => $request->boolean('results_published'),
         ]);
 
+        \App\Models\ActivityLog::record('elections', 'election_flags_updated', "Updated election flags for {$election->title}.");
+
         return back()->with('success', 'Election controls updated successfully.');
+    }
+
+    public function openElection(Request $request, Election $election): RedirectResponse
+    {
+        $election->update([
+            'is_enabled' => true,
+            'applications_open' => true,
+            'voting_open' => true,
+            'ended_at' => null,
+            'ended_by' => null,
+        ]);
+
+        \App\Models\ActivityLog::record('elections', 'election_opened', "Opened election cycle {$election->title} for nominations and voting.");
+
+        return back()->with('success', 'Election is now OPEN for applications and voting.');
     }
 
     public function endElection(Request $request, Election $election): RedirectResponse
@@ -136,7 +153,133 @@ class AdminModulesController extends Controller
             ->where('is_active', true)
             ->update(['is_active' => false]);
 
-        return back()->with('success', 'Election ended immediately. Voting is now permanently closed and official results are published.');
+        // Automatically promote elected winners to Leaders (Homepage/Dashboard) & User SONIT Titles!
+        $promoted = $this->promoteElectionWinners($election);
+
+        \App\Models\ActivityLog::record(
+            'elections',
+            'election_ended',
+            "Ended election {$election->title} and auto-promoted ".count($promoted).' elected leader(s): '.implode(', ', $promoted)
+        );
+
+        $msg = 'Election ended immediately and official results published.';
+        if (! empty($promoted)) {
+            $msg .= ' Auto-promoted winners to Homepage & Leadership: '.implode(', ', $promoted).'.';
+        }
+
+        return back()->with('success', $msg);
+    }
+
+    protected function promoteElectionWinners(Election $election): array
+    {
+        $promoted = [];
+
+        // 1. Campus-wide Executive & Cabinet positions
+        $positionMeta = [
+            'President' => ['title' => 'President, SONIT Student Government', 'user_title' => 'SONIT President', 'category' => 'executive', 'sort' => 2, 'featured' => true, 'dept' => 'SONIT Executive Office'],
+            'Vice President' => ['title' => 'Vice President, SONIT Student Government', 'user_title' => 'SONIT Vice President', 'category' => 'executive', 'sort' => 3, 'featured' => true, 'dept' => 'SONIT Executive Office'],
+            'General Secretary' => ['title' => 'General Secretary, SONIT', 'user_title' => 'SONIT General Secretary', 'category' => 'ministry', 'sort' => 4, 'featured' => false, 'dept' => 'SONIT Secretariat'],
+            'Treasurer' => ['title' => 'Minister of Finance & Treasurer, SONIT', 'user_title' => 'SONIT Treasurer', 'category' => 'ministry', 'sort' => 5, 'featured' => false, 'dept' => 'Ministry of Finance'],
+        ];
+
+        foreach ($positionMeta as $position => $meta) {
+            $winner = $election->approvedCandidates()
+                ->with(['user', 'course'])
+                ->withCount('votes')
+                ->where('position', $position)
+                ->orderByDesc('votes_count')
+                ->first();
+
+            if (! $winner || $winner->votes_count <= 0) {
+                continue;
+            }
+
+            // Clear old user's title for this exact office
+            \App\Models\User::where('sonit_title', $meta['user_title'])->update(['sonit_title' => null]);
+
+            if ($winner->user) {
+                $winner->user->update(['sonit_title' => $meta['user_title']]);
+            }
+
+            // Replace/update the office leader card automatically so Homepage & Leadership reflect the newly elected leader
+            $existingOfficeLeader = Leader::where('category', $meta['category'])
+                ->where('position', $meta['title'])
+                ->first();
+
+            $leaderData = [
+                'user_id' => $winner->user_id,
+                'election_id' => $election->id,
+                'name' => 'Hon. '.$winner->fullname,
+                'position' => $meta['title'],
+                'category' => $meta['category'],
+                'department' => $meta['dept'],
+                'bio' => \Illuminate\Support\Str::limit($winner->manifesto, 400),
+                'quote' => $winner->motto,
+                'email' => $winner->contact_email ?: $winner->user?->email,
+                'phone' => $winner->contact_phone ?: $winner->user?->phone,
+                'sort_order' => $meta['sort'],
+                'is_featured' => $meta['featured'],
+                'is_active' => true,
+            ];
+
+            if ($winner->photo) {
+                $leaderData['photo'] = $winner->photo;
+            }
+
+            if ($existingOfficeLeader) {
+                $existingOfficeLeader->update($leaderData);
+            } else {
+                Leader::create($leaderData);
+            }
+
+            $promoted[] = "{$meta['user_title']} ({$winner->fullname})";
+        }
+
+        // 2. Per-Course Parliament Representative winners
+        $prGroups = $election->approvedCandidates()
+            ->with(['user', 'course'])
+            ->withCount('votes')
+            ->where('position', 'Parliament Representative')
+            ->orderByDesc('votes_count')
+            ->get()
+            ->groupBy('course_id');
+
+        foreach ($prGroups as $courseId => $candidates) {
+            $winner = $candidates->first();
+            if (! $winner || $winner->votes_count <= 0) {
+                continue;
+            }
+
+            $courseCode = $winner->course?->code ?? 'NIT';
+            $prTitle = "SONIT Parliament Representative ({$courseCode})";
+
+            \App\Models\User::where('sonit_title', $prTitle)->update(['sonit_title' => null]);
+            if ($winner->user) {
+                $winner->user->update(['sonit_title' => $prTitle]);
+            }
+
+            Leader::updateOrCreate(
+                ['category' => 'parliament', 'department' => "{$courseCode} Constituency"],
+                [
+                    'user_id' => $winner->user_id,
+                    'election_id' => $election->id,
+                    'name' => 'Hon. '.$winner->fullname,
+                    'position' => $prTitle,
+                    'bio' => \Illuminate\Support\Str::limit($winner->manifesto, 300),
+                    'quote' => $winner->motto,
+                    'photo' => $winner->photo,
+                    'email' => $winner->contact_email ?: $winner->user?->email,
+                    'phone' => $winner->contact_phone ?: $winner->user?->phone,
+                    'sort_order' => 20,
+                    'is_featured' => false,
+                    'is_active' => true,
+                ]
+            );
+
+            $promoted[] = "{$prTitle} ({$winner->fullname})";
+        }
+
+        return $promoted;
     }
 
     public function reopenElection(Request $request, Election $election): RedirectResponse
@@ -148,6 +291,8 @@ class AdminModulesController extends Controller
             'voting_open' => true,
         ]);
 
+        \App\Models\ActivityLog::record('elections', 'election_reopened', "Reopened election {$election->title}.");
+
         return back()->with('success', 'Election has been reopened for voting.');
     }
 
@@ -157,9 +302,75 @@ class AdminModulesController extends Controller
             'status' => ['required', 'in:pending,approved,declined'],
         ]);
 
-        $candidate->update(['status' => $data['status']]);
+        $interviewStatus = match ($data['status']) {
+            'approved' => 'passed',
+            'declined' => 'failed',
+            default => $candidate->interview_status,
+        };
+
+        $candidate->update([
+            'status' => $data['status'],
+            'interview_status' => $interviewStatus,
+        ]);
+
+        \App\Models\ActivityLog::record('elections', 'candidate_status_changed', "Set {$candidate->fullname} ({$candidate->position}) status to {$data['status']}.");
 
         return back()->with('success', "{$candidate->fullname}'s candidacy marked as {$data['status']}.");
+    }
+
+    public function updateCandidate(Request $request, Candidate $candidate): RedirectResponse
+    {
+        $data = $request->validate([
+            'fullname' => ['required', 'string', 'max:140'],
+            'reg_no' => ['required', 'string', 'max:50'],
+            'position' => ['required', 'string', 'in:'.implode(',', Candidate::POSITIONS)],
+            'contact_email' => ['nullable', 'email', 'max:120'],
+            'contact_phone' => ['nullable', 'string', 'max:40'],
+            'motto' => ['required', 'string', 'max:180'],
+            'manifesto' => ['nullable', 'string', 'max:3000'],
+            'payment_status' => ['required', 'in:unpaid,submitted,verified'],
+            'interview_status' => ['required', 'in:pending_payment,scheduled,passed,failed'],
+            'interview_date' => ['nullable', 'string', 'max:100'],
+            'interview_notes' => ['nullable', 'string', 'max:1000'],
+            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ]);
+
+        if ($request->hasFile('photo')) {
+            $file = $request->file('photo');
+            $filename = 'cand_edit_'.$candidate->id.'_'.time().'.'.$file->getClientOriginalExtension();
+            $file->move(public_path('uploads/candidates'), $filename);
+            $data['photo'] = 'uploads/candidates/'.$filename;
+        } else {
+            unset($data['photo']);
+        }
+
+        // Sync ballot eligibility status cleanly with interview outcome
+        $data['status'] = match ($data['interview_status']) {
+            'passed' => 'approved',
+            'failed' => 'declined',
+            default => 'pending',
+        };
+
+        $candidate->update($data);
+
+        \App\Models\ActivityLog::record(
+            'elections',
+            'candidate_updated',
+            "Updated contestant {$candidate->fullname} ({$candidate->position}) — Payment: {$candidate->payment_status}, Interview: {$candidate->interview_status}."
+        );
+
+        return back()->with('success', "Contestant {$candidate->fullname} updated.");
+    }
+
+    public function deleteCandidate(Candidate $candidate): RedirectResponse
+    {
+        $name = $candidate->fullname;
+        $pos = $candidate->position;
+        $candidate->delete();
+
+        \App\Models\ActivityLog::record('elections', 'candidate_deleted', "Deleted contestant {$name} ({$pos}) from election.");
+
+        return back()->with('success', "Contestant {$name} removed from the election.");
     }
 
     // --- CAMPUS SERVICES (VENUES, ACCOMMODATION, HELP DESK, LOST & FOUND) ---
@@ -370,6 +581,37 @@ class AdminModulesController extends Controller
             'is_active' => true,
         ]);
 
+        \App\Models\ActivityLog::record('leadership', 'leader_created', "Added leader profile: {$data['name']} ({$data['position']}).");
+
         return back()->with('success', 'Leadership profile added.');
+    }
+
+    public function updateLeader(Request $request, Leader $leader): RedirectResponse
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:140'],
+            'position' => ['required', 'string', 'max:140'],
+            'bio' => ['nullable', 'string', 'max:1000'],
+            'quote' => ['nullable', 'string', 'max:300'],
+            'email' => ['nullable', 'email', 'max:120'],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'office_location' => ['nullable', 'string', 'max:140'],
+            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ]);
+
+        if ($request->hasFile('photo')) {
+            $file = $request->file('photo');
+            $filename = 'leader_edit_'.$leader->id.'_'.time().'.'.$file->getClientOriginalExtension();
+            $file->move(public_path('uploads/leaders'), $filename);
+            $data['photo'] = 'uploads/leaders/'.$filename;
+        } else {
+            unset($data['photo']);
+        }
+
+        $leader->update($data);
+
+        \App\Models\ActivityLog::record('leadership', 'leader_updated', "Updated leader profile: {$leader->name} ({$leader->position}).");
+
+        return back()->with('success', "Updated {$leader->name}'s official leadership profile.");
     }
 }

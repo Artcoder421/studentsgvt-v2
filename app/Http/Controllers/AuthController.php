@@ -47,6 +47,7 @@ class AuthController extends Controller
 
         if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             RateLimiter::hit($throttleKey, 60);
+            \App\Models\ActivityLog::record('auth', 'login_failed', "Failed sign-in attempt for identifier: {$identifier}.");
 
             return back()
                 ->withInput($request->only('identifier'))
@@ -63,6 +64,8 @@ class AuthController extends Controller
         Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
         $user->syncCourseCommunities();
+
+        \App\Models\ActivityLog::record('auth', 'login', "Signed in as {$user->name} ({$user->roleLabel()}).", $user);
 
         if ($user->isAdmin()) {
             return redirect()->intended(route('admin.dashboard'))
@@ -114,12 +117,19 @@ class AuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
+        \App\Models\ActivityLog::record('auth', 'register', "Registered new student account {$user->reg_no}.", $user);
+
         return redirect()->route('dashboard')
             ->with('success', 'Your SONIT student account is active and you have been automatically placed in your course community.');
     }
 
     public function logout(Request $request): RedirectResponse
     {
+        $actor = Auth::user();
+        if ($actor) {
+            \App\Models\ActivityLog::record('auth', 'logout', "Signed out from SONIT Portal.", $actor);
+        }
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

@@ -111,4 +111,41 @@
         </form>
     </div>
 </div>
+
+{{-- Edit Elected / Existing Leaders (Update Photo, Bio, Quote, Contacts) --}}
+<div class="card mt-4">
+    <h2 style="margin:0 0 12px;font-size:17px;font-weight:800;color:var(--nit-black);">Manage Current & Auto-Elected Leaders ({{ $leaders->count() }})</h2>
+    <p class="text-xs muted mb-3">Elected winners appear here automatically when an election ends. You can update their official portrait image, quote, bio, or office contacts at any time.</p>
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+        @foreach($leaders as $leader)
+            <form method="POST" action="{{ route('admin.leaders.update', $leader) }}" enctype="multipart/form-data" style="border:1px solid var(--border);padding:12px;background:var(--canvas);">
+                @csrf
+                @method('PUT')
+                <div class="grid grid-4" style="gap:8px;align-items:end;">
+                    <div class="form-group" style="margin:0;">
+                        <label class="form-label">Name</label>
+                        <input type="text" name="name" value="{{ $leader->name }}" class="form-control" required>
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label class="form-label">Position</label>
+                        <input type="text" name="position" value="{{ $leader->position }}" class="form-control" required>
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label class="form-label">Quote / Motto</label>
+                        <input type="text" name="quote" value="{{ $leader->quote }}" class="form-control">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label class="form-label">Update Portrait Image</label>
+                        <input type="file" name="photo" accept="image/*" class="form-control">
+                    </div>
+                </div>
+                <div class="flex-between mt-2 flex-wrap" style="gap:8px;">
+                    <input type="text" name="bio" value="{{ $leader->bio }}" class="form-control" style="flex:1;" placeholder="Official biography...">
+                    <button type="submit" class="btn btn-primary btn-sm">Update Leader</button>
+                </div>
+            </form>
+        @endforeach
+    </div>
+</div>
 @endsection

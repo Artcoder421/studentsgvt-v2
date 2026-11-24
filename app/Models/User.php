@@ -31,6 +31,7 @@ class User extends Authenticatable
         'reg_no',
         'password',
         'role',
+        'sonit_title',
         'course_id',
         'year_joined',
         'academic_level',

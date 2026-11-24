@@ -375,4 +375,78 @@ class SonitPortalTest extends TestCase
 
         $this->assertTrue(TimerAnnouncement::where('title', 'Emergency Blood Donation Drive at NIT Plaza')->exists());
     }
+
+    public function test_candidate_application_fee_interview_edit_delete_auto_promotion_and_logs(): void
+    {
+        $student = User::where('reg_no', 'NIT/BLTM/2023/7658')->firstOrFail();
+        $admin = User::where('email', 'admin@sonit.nit.ac.tz')->firstOrFail();
+        $election = Election::firstOrFail();
+
+        // 1. Student applies with email & phone -> sees unpaid status -> submits payment ref
+        $this->actingAs($student)->post('/elections/apply', [
+            'position' => 'General Secretary',
+            'academic_level' => 'Second Year',
+            'contact_email' => 'hawa.hemed@student.nit.ac.tz',
+            'contact_phone' => '+255 755 765 801',
+            'motto' => 'Efficient Student Records',
+            'manifesto' => 'Modernizing parliamentary minutes and transparent committee tracking across NIT.',
+        ])->assertRedirect('/dashboard');
+
+        $app = Candidate::where('user_id', $student->id)->firstOrFail();
+        $this->assertEquals('unpaid', $app->payment_status);
+
+        $this->actingAs($student)->post("/elections/application/{$app->id}/payment", [
+            'payment_reference' => 'MPESA-FEE-8891',
+        ])->assertRedirect();
+        $this->assertEquals('submitted', $app->fresh()->payment_status);
+
+        // 2. Admin edits contestant name AND marks interview as FAILED (Did Not Pass Interview)
+        $this->actingAs($admin)->put("/admin/candidates/{$app->id}", [
+            'fullname' => 'Hawa R. Hemed (Edited)',
+            'reg_no' => $app->reg_no,
+            'position' => 'General Secretary',
+            'contact_email' => 'hawa.hemed@student.nit.ac.tz',
+            'contact_phone' => '+255 755 765 801',
+            'motto' => 'Efficient Student Records',
+            'payment_status' => 'verified',
+            'interview_status' => 'failed',
+            'interview_notes' => 'Minimum GPA requirement not met.',
+        ])->assertRedirect();
+
+        $this->assertEquals('Hawa R. Hemed (Edited)', $app->fresh()->fullname);
+        $this->assertEquals('declined', $app->fresh()->status);
+
+        // Student sees "Did Not Pass Interview" clearly on Dashboard & Elections page
+        $this->actingAs($student)->get('/dashboard')
+            ->assertSee('Did Not Pass Interview')
+            ->assertSee('Minimum GPA requirement not met.');
+
+        // 3. Admin deletes that contestant cleanly
+        $this->actingAs($admin)->delete("/admin/candidates/{$app->id}")->assertRedirect();
+        $this->assertDatabaseMissing('candidates', ['id' => $app->id]);
+
+        // 4. Beatrice wins President vote -> Admin ends election -> Beatrice AUTOMATICALLY becomes Homepage President & gets SONIT President title on her account!
+        $beatriceCand = Candidate::where('fullname', 'Beatrice E. Mwakalinga')->firstOrFail();
+        $this->actingAs($student)->post('/elections/vote', [
+            'position' => 'President',
+            'candidate_id' => $beatriceCand->id,
+        ])->assertRedirect('/elections');
+
+        $this->actingAs($admin)->post("/admin/elections/{$election->id}/end")->assertRedirect();
+
+        $beatriceUser = User::where('reg_no', 'NIT/BIT/2022/3044')->firstOrFail();
+        $this->assertEquals('SONIT President', $beatriceUser->sonit_title);
+
+        // Homepage & Beatrice's own logged-in Dashboard immediately show her as SONIT President without manual upload!
+        $this->get('/')->assertSee('Hon. Beatrice E. Mwakalinga');
+        $this->actingAs($beatriceUser)->get('/dashboard')->assertSee('SONIT President');
+
+        // 5. Activity Logs & Visitor Logs recorded automatically and viewable in /admin/logs
+        $this->assertGreaterThan(0, \App\Models\ActivityLog::count());
+        $this->assertGreaterThan(0, \App\Models\VisitorLog::count());
+        $this->actingAs($admin)->get('/admin/logs')
+            ->assertStatus(200)
+            ->assertSee('election_ended')
+            ->assertSee('candidate_deleted');
+    }
 }

@@ -277,6 +277,8 @@ class CommunityController extends Controller
             'attachment' => $attachmentPath,
         ]);
 
+        \App\Models\ActivityLog::record('communities', 'message_posted', "Posted a message in {$community->name}.", $user);
+
         return redirect()->route('communities.show', $community)->with('success', 'Message posted.');
     }
 

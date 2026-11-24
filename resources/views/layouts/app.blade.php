@@ -118,6 +118,9 @@
         <div class="sidebar-footer">
             @auth
                 <div style="font-size:12px;font-weight:700;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ auth()->user()->name }}</div>
+                @if(auth()->user()->sonit_title)
+                    <div style="margin:3px 0 4px;"><span class="badge badge-crimson" style="font-size:10px;">{{ auth()->user()->sonit_title }}</span></div>
+                @endif
                 <div class="mono" style="font-size:10.5px;color:var(--nit-blue);margin-bottom:8px;">{{ auth()->user()->reg_no ?? auth()->user()->roleLabel() }}</div>
                 <div class="flex-between" style="gap:6px;">
                     <a href="{{ route('profile.edit') }}" class="btn btn-ghost-light btn-sm" style="flex:1;">Profile</a>
@@ -206,6 +209,9 @@
                         @endif
                     </a>
                     @auth
+                        @if(auth()->user()->sonit_title)
+                            <span class="badge badge-crimson">{{ auth()->user()->sonit_title }}</span>
+                        @endif
                         @if(auth()->user()->course)
                             <span class="badge badge-navy mono">{{ auth()->user()->course->code }}</span>
                         @endif

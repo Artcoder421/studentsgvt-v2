@@ -64,11 +64,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/communities/{community:slug}/messages/{message}/pin', [CommunityController::class, 'togglePinMessage'])->name('communities.messages.pin');
     Route::post('/communities/{community:slug}/toggle-lock', [CommunityController::class, 'toggleLock'])->name('communities.toggle-lock');
 
-    // Elections voting & nominations
+    // Elections voting, nominations & fee payment reference
     Route::get('/elections/ballot', [ElectionController::class, 'ballot'])->name('elections.ballot');
     Route::post('/elections/vote', [ElectionController::class, 'vote'])->name('elections.vote');
     Route::get('/elections/apply', [ElectionController::class, 'showApply'])->name('elections.apply');
     Route::post('/elections/apply', [ElectionController::class, 'apply'])->name('elections.apply.submit');
+    Route::post('/elections/application/{candidate}/payment', [ElectionController::class, 'submitPayment'])->name('elections.application.payment');
 
     // Campus Services submissions
     Route::post('/venues/book', [CampusServiceController::class, 'bookVenue'])->name('venues.book');
@@ -88,6 +89,7 @@ Route::middleware('auth')->group(function () {
 // Admin Command Center (SONIT Admin & Super Admin)
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,admin'])->group(function () {
     Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/logs', [AdminDashboardController::class, 'logs'])->name('logs');
 
     // User & Role Governance (Viewable by Admin; role updates strictly Super Admin)
     Route::get('/users', [AdminDashboardController::class, 'users'])->name('users');
@@ -115,13 +117,16 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     Route::post('/announcements', [AdminModulesController::class, 'storeAnnouncement'])->name('announcements.store');
     Route::delete('/announcements/{announcement}', [AdminModulesController::class, 'deleteAnnouncement'])->name('announcements.delete');
 
-    // Elections & Contestants
+    // Elections & Contestants (Open, End/Auto-Promote, Edit Contestants, Delete Contestants)
     Route::get('/elections', [AdminModulesController::class, 'elections'])->name('elections');
     Route::post('/elections', [AdminModulesController::class, 'storeElection'])->name('elections.store');
     Route::post('/elections/{election}/flags', [AdminModulesController::class, 'updateElectionFlags'])->name('elections.flags');
+    Route::post('/elections/{election}/open', [AdminModulesController::class, 'openElection'])->name('elections.open');
     Route::post('/elections/{election}/end', [AdminModulesController::class, 'endElection'])->name('elections.end');
     Route::post('/elections/{election}/reopen', [AdminModulesController::class, 'reopenElection'])->name('elections.reopen');
     Route::post('/candidates/{candidate}/status', [AdminModulesController::class, 'updateCandidateStatus'])->name('candidates.status');
+    Route::put('/candidates/{candidate}', [AdminModulesController::class, 'updateCandidate'])->name('candidates.update');
+    Route::delete('/candidates/{candidate}', [AdminModulesController::class, 'deleteCandidate'])->name('candidates.delete');
 
     // Campus Services (Venues, Accommodation, Help Desk, Lost & Found)
     Route::get('/services', [AdminModulesController::class, 'services'])->name('services');
@@ -138,4 +143,5 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:super_admin,ad
     Route::post('/charity', [AdminModulesController::class, 'storeCharity'])->name('charity.store');
     Route::post('/charity/contributions/{contribution}/verify', [AdminModulesController::class, 'verifyCharityContribution'])->name('charity.verify');
     Route::post('/leaders', [AdminModulesController::class, 'storeLeader'])->name('leaders.store');
+    Route::put('/leaders/{leader}', [AdminModulesController::class, 'updateLeader'])->name('leaders.update');
 });

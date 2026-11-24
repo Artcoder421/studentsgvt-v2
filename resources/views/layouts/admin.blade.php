@@ -29,6 +29,7 @@
         <a href="{{ route('admin.elections') }}" class="admin-nav-link {{ request()->routeIs('admin.elections*') ? 'active' : '' }}">Elections & Early End</a>
         <a href="{{ route('admin.services') }}" class="admin-nav-link {{ request()->routeIs('admin.services*') ? 'active' : '' }}">Venues, Housing & Help</a>
         <a href="{{ route('admin.campus-life') }}" class="admin-nav-link {{ request()->routeIs('admin.campus-life*') ? 'active' : '' }}">Events, Sports & Charity</a>
+        <a href="{{ route('admin.logs') }}" class="admin-nav-link {{ request()->routeIs('admin.logs*') ? 'active' : '' }}">Activity & Visitor Logs</a>
 
         <div style="margin-top:auto;padding-top:14px;border-top:1px solid rgba(255,255,255,0.12);display:flex;flex-direction:column;gap:6px;">
             <a href="{{ route('dashboard') }}" class="admin-nav-link">Student Portal</a>

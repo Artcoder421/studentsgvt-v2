@@ -121,12 +121,21 @@ class HomeController extends Controller
             ->orderBy('sort_order')
             ->first();
 
+        $myApplication = ($activeElection && $user)
+            ? \App\Models\Candidate::with('course')
+                ->where('election_id', $activeElection->id)
+                ->where('user_id', $user->id)
+                ->latest()
+                ->first()
+            : null;
+
         return view('portal.dashboard', compact(
             'user',
             'presidentLeader',
             'myCourseCommunities',
             'generalCommunities',
             'activeElection',
+            'myApplication',
             'votedPresident',
             'votedPr',
             'myTickets',

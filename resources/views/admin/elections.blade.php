@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
-@section('title', 'Elections & Early Termination — SONIT Admin')
-@section('page_title', 'Electoral Commission Controls & Candidate Vetting')
+@section('title', 'Elections, Contestant Editor & Auto-Promotion — SONIT Admin')
+@section('page_title', 'Electoral Commission Controls, Screening & Contestants')
 
 @section('content')
 @if($activeElection)
@@ -12,25 +12,32 @@
                 <h2 style="margin:0;font-size:20px;font-weight:800;color:var(--nit-black);">{{ $activeElection->title }} ({{ $activeElection->academic_year }})</h2>
                 @if($activeElection->isEnded())
                     <div class="text-xs mt-1" style="color:var(--nit-red-dark);font-weight:700;">
-                        ENDED EARLY BY ADMIN on {{ $activeElection->ended_at->format('d M Y, H:i') }} (Countdown overridden — voting permanently closed).
+                        ENDED on {{ $activeElection->ended_at->format('d M Y, H:i') }} — Winners automatically promoted to Homepage, Leadership Directory & Student SONIT Titles.
                     </div>
                 @elseif($activeElection->voting_ends_at)
                     <div class="text-xs muted mono mt-1">
-                        Scheduled countdown end: {{ $activeElection->voting_ends_at->format('d M Y, H:i') }} (Admin can end immediately at any time)
+                        Scheduled countdown end: {{ $activeElection->voting_ends_at->format('d M Y, H:i') }}
                     </div>
                 @endif
             </div>
 
             <div class="flex-center flex-wrap" style="gap:8px;">
-                <a href="{{ route('elections.results') }}" class="btn btn-outline btn-sm">View Live Tally</a>
+                <a href="{{ route('elections.results') }}" class="btn btn-outline btn-sm">Live Tally</a>
+
+                @if(!$activeElection->isVotingActive())
+                    <form method="POST" action="{{ route('admin.elections.open', $activeElection) }}" style="margin:0;">
+                        @csrf
+                        <button type="submit" class="btn btn-primary btn-sm">Open Election Now</button>
+                    </form>
+                @endif
 
                 @if(!$activeElection->isEnded())
-                    <form method="POST" action="{{ route('admin.elections.end', $activeElection) }}" style="margin:0;" onsubmit="return confirm('END ELECTION IMMEDIATELY? This stops all voting right now even if the countdown timer is still running, and publishes official results.');">
+                    <form method="POST" action="{{ route('admin.elections.end', $activeElection) }}" style="margin:0;" onsubmit="return confirm('END ELECTION NOW? Voting stops immediately, results publish, and winning candidates are AUTOMATICALLY promoted to Homepage & SONIT Leadership.');">
                         @csrf
-                        <button type="submit" class="btn btn-danger btn-sm">End Election Now (Stop Countdown)</button>
+                        <button type="submit" class="btn btn-danger btn-sm">End Election & Auto-Promote Winners</button>
                     </form>
                 @else
-                    <form method="POST" action="{{ route('admin.elections.reopen', $activeElection) }}" style="margin:0;" onsubmit="return confirm('Reopen this election for voting?');">
+                    <form method="POST" action="{{ route('admin.elections.reopen', $activeElection) }}" style="margin:0;">
                         @csrf
                         <button type="submit" class="btn btn-primary btn-sm">Reopen Election</button>
                     </form>
@@ -42,58 +49,138 @@
             @csrf
             <div class="flex-center flex-wrap" style="gap:16px;">
                 <label class="flex-center text-sm"><input type="checkbox" name="is_enabled" value="1" @checked($activeElection->is_enabled)> Election Enabled</label>
-                <label class="flex-center text-sm"><input type="checkbox" name="applications_open" value="1" @checked($activeElection->applications_open)> Nominations Open</label>
+                <label class="flex-center text-sm"><input type="checkbox" name="applications_open" value="1" @checked($activeElection->applications_open)> Applications Open</label>
                 <label class="flex-center text-sm"><input type="checkbox" name="voting_open" value="1" @checked($activeElection->voting_open)> Voting Open</label>
-                <label class="flex-center text-sm"><input type="checkbox" name="results_published" value="1" @checked($activeElection->results_published)> Publish Results Publicly</label>
+                <label class="flex-center text-sm"><input type="checkbox" name="results_published" value="1" @checked($activeElection->results_published)> Publish Results</label>
             </div>
             <button type="submit" class="btn btn-black btn-sm">Save Flags</button>
         </form>
     </div>
 @endif
 
+{{-- Contestants Management: Edit Name/Details, Verify Fee, Grade Interview, Delete --}}
 <div class="card mb-4">
-    <h2 style="margin:0 0 12px;font-size:17px;font-weight:800;color:var(--nit-black);">Candidate Vetting Queue ({{ $candidates->count() }})</h2>
-    <div class="table-wrap">
-        <table class="sonit-table">
-            <thead>
-                <tr>
-                    <th>Candidate</th>
-                    <th>Position & Course</th>
-                    <th>Motto</th>
-                    <th>Votes</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($candidates as $c)
-                    <tr>
-                        <td>
-                            <strong>{{ $c->fullname }}</strong>
-                            <div class="text-xs mono muted">{{ $c->reg_no }}</div>
-                        </td>
-                        <td>
+    <h2 style="margin:0 0 12px;font-size:17px;font-weight:800;color:var(--nit-black);">Contestants, Fee Verification & Interview Screening ({{ $candidates->count() }})</h2>
+    <p class="text-xs muted mb-3">Edit any contestant's name, contact details, photo, fee payment status, or interview result. Setting Interview to <strong>Passed</strong> places them on the ballot; setting <strong>Failed</strong> displays <em>"Did Not Pass Interview"</em> in their student account.</p>
+
+    <div style="display:flex;flex-direction:column;gap:14px;">
+        @forelse($candidates as $c)
+            <div style="border:1px solid var(--border);border-left:4px solid {{ $c->status === 'approved' ? 'var(--emerald-700)' : ($c->status === 'declined' ? 'var(--nit-red)' : 'var(--nit-blue)') }};padding:14px;background:var(--canvas);">
+                <div class="flex-between flex-wrap mb-2" style="gap:10px;">
+                    <div class="flex-center">
+                        @if($c->photo)
+                            <img src="{{ asset($c->photo) }}" alt="{{ $c->fullname }}" style="width:42px;height:48px;object-fit:cover;object-position:top;border-radius:2px;border:1px solid var(--border);">
+                        @endif
+                        <div>
+                            <strong style="font-size:15px;color:var(--nit-black);">{{ $c->fullname }}</strong>
                             <span class="badge badge-navy">{{ $c->position }}</span>
-                            @if($c->course)<span class="badge badge-slate mono">{{ $c->course->code }}</span>@endif
-                        </td>
-                        <td class="text-xs">{{ $c->motto }}</td>
-                        <td class="mono"><strong>{{ $c->votes_count }}</strong></td>
-                        <td>
+                            @if($c->course)<span class="badge badge-black mono">{{ $c->course->code }}</span>@endif
                             <span class="badge {{ $c->status === 'approved' ? 'badge-emerald' : ($c->status === 'declined' ? 'badge-crimson' : 'badge-amber') }}">
-                                {{ ucfirst($c->status) }}
+                                {{ $c->stageLabel() }}
                             </span>
-                        </td>
-                        <td>
-                            <form method="POST" action="{{ route('admin.candidates.status', $c) }}" class="flex-center" style="gap:6px;">
-                                @csrf
-                                <button type="submit" name="status" value="approved" class="btn btn-emerald btn-sm">Approve</button>
-                                <button type="submit" name="status" value="declined" class="btn btn-danger btn-sm">Decline</button>
-                            </form>
-                        </td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
+                            <div class="text-xs mono muted mt-1">
+                                {{ $c->reg_no }} · Votes: <strong>{{ $c->votes_count }}</strong> ·
+                                Fee: TZS {{ number_format($c->application_fee_amount) }} ({{ strtoupper($c->payment_status) }}{{ $c->payment_reference ? ' · Ref: '.$c->payment_reference : '' }})
+                            </div>
+                            <div class="text-xs muted">
+                                Contact: {{ $c->contact_email ?? 'No email' }} | {{ $c->contact_phone ?? 'No phone' }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{{ route('admin.candidates.delete', $c) }}" style="margin:0;" onsubmit="return confirm('Delete contestant {{ $c->fullname }} permanently from this election?');">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-danger btn-sm">Delete Contestant</button>
+                    </form>
+                </div>
+
+                {{-- Inline Edit Form for Name, Details, Fee & Interview --}}
+                <details>
+                    <summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--nit-blue-dark);padding:4px 0;">
+                        Edit Contestant Name, Photo, Fee Payment & Interview Result
+                    </summary>
+                    <form method="POST" action="{{ route('admin.candidates.update', $c) }}" enctype="multipart/form-data" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);background:#fff;padding:12px;">
+                        @csrf
+                        @method('PUT')
+                        <div class="grid grid-3" style="gap:10px;">
+                            <div class="form-group" style="margin:0;">
+                                <label class="form-label">Full Name</label>
+                                <input type="text" name="fullname" value="{{ $c->fullname }}" class="form-control" required>
+                            </div>
+                            <div class="form-group" style="margin:0;">
+                                <label class="form-label">Reg No</label>
+                                <input type="text" name="reg_no" value="{{ $c->reg_no }}" class="form-control mono" required>
+                            </div>
+                            <div class="form-group" style="margin:0;">
+                                <label class="form-label">Position</label>
+                                <select name="position" class="form-select">
+                                    @foreach(\App\Models\Candidate::POSITIONS as $pos)
+                                        <option value="{{ $pos }}" @selected($c->position === $pos)>{{ $pos }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-3 mt-2" style="gap:10px;">
+                            <div class="form-group" style="margin:0;">
+                                <label class="form-label">Contact Email</label>
+                                <input type="email" name="contact_email" value="{{ $c->contact_email }}" class="form-control">
+                            </div>
+                            <div class="form-group" style="margin:0;">
+                                <label class="form-label">Contact Phone</label>
+                                <input type="text" name="contact_phone" value="{{ $c->contact_phone }}" class="form-control mono">
+                            </div>
+                            <div class="form-group" style="margin:0;">
+                                <label class="form-label">Update Photo (Optional)</label>
+                                <input type="file" name="photo" accept="image/*" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-3 mt-2" style="gap:10px;">
+                            <div class="form-group" style="margin:0;">
+                                <label class="form-label">Application Fee Payment</label>
+                                <select name="payment_status" class="form-select">
+                                    <option value="unpaid" @selected($c->payment_status === 'unpaid')>Unpaid</option>
+                                    <option value="submitted" @selected($c->payment_status === 'submitted')>Submitted (Pending Check)</option>
+                                    <option value="verified" @selected($c->payment_status === 'verified')>Verified Paid</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin:0;">
+                                <label class="form-label">Interview Screening Outcome</label>
+                                <select name="interview_status" class="form-select">
+                                    <option value="pending_payment" @selected($c->interview_status === 'pending_payment')>Awaiting Fee Payment</option>
+                                    <option value="scheduled" @selected($c->interview_status === 'scheduled')>Interview Scheduled</option>
+                                    <option value="passed" @selected($c->interview_status === 'passed')>Passed Interview (Approve on Ballot)</option>
+                                    <option value="failed" @selected($c->interview_status === 'failed')>Did Not Pass Interview (Decline)</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin:0;">
+                                <label class="form-label">Interview Date / Venue</label>
+                                <input type="text" name="interview_date" value="{{ $c->interview_date }}" class="form-control" placeholder="e.g. Fri 10:00 AM · SONIT Room 104">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-2 mt-2" style="gap:10px;">
+                            <div class="form-group" style="margin:0;">
+                                <label class="form-label">Campaign Motto</label>
+                                <input type="text" name="motto" value="{{ $c->motto }}" class="form-control" required>
+                            </div>
+                            <div class="form-group" style="margin:0;">
+                                <label class="form-label">Interview Remarks (Shown to Applicant)</label>
+                                <input type="text" name="interview_notes" value="{{ $c->interview_notes }}" class="form-control" placeholder="Feedback or reason if did not pass...">
+                            </div>
+                        </div>
+
+                        <div class="mt-2">
+                            <button type="submit" class="btn btn-primary btn-sm">Save Contestant Changes</button>
+                        </div>
+                    </form>
+                </details>
+            </div>
+        @empty
+            <p class="text-sm muted">No contestants applied yet.</p>
+        @endforelse
     </div>
 </div>
 

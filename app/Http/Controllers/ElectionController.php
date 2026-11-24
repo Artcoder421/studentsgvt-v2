@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\Candidate;
 use App\Models\Election;
 use App\Models\Vote;
@@ -24,6 +25,7 @@ class ElectionController extends Controller
         $prCandidates = collect();
         $otherCandidates = collect();
         $votedPositions = [];
+        $myApplication = null;
 
         if ($election) {
             $presidentialCandidates = $election->approvedCandidates()
@@ -47,6 +49,12 @@ class ElectionController extends Controller
                     ->where('voter_id', $user->id)
                     ->pluck('position')
                     ->toArray();
+
+                $myApplication = Candidate::with('course')
+                    ->where('election_id', $election->id)
+                    ->where('user_id', $user->id)
+                    ->latest()
+                    ->first();
             }
         }
 
@@ -55,7 +63,8 @@ class ElectionController extends Controller
             'presidentialCandidates',
             'prCandidates',
             'otherCandidates',
-            'votedPositions'
+            'votedPositions',
+            'myApplication'
         ));
     }
 
@@ -102,7 +111,7 @@ class ElectionController extends Controller
 
         if (! $election || ! $election->isVotingActive()) {
             return redirect()->route('elections.index')
-                ->with('error', 'Voting is currently disabled or outside the voting window.');
+                ->with('error', 'Voting is currently disabled or closed.');
         }
 
         $data = $request->validate([
@@ -147,6 +156,13 @@ class ElectionController extends Controller
                 ->with('error', 'Duplicate ballot prevented: you have already cast your vote for this position.');
         }
 
+        ActivityLog::record(
+            'elections',
+            'ballot_cast',
+            "Cast verified secret ballot for {$data['position']} in {$election->academic_year} election.",
+            $user
+        );
+
         return redirect()->route('elections.index')
             ->with('success', "Your secure ballot for {$data['position']} has been recorded.");
     }
@@ -154,20 +170,24 @@ class ElectionController extends Controller
     public function showApply(): View|RedirectResponse
     {
         $election = Election::latest()->first();
-        if (! $election || ! $election->is_enabled || ! $election->applications_open) {
+        if (! $election || ! $election->is_enabled || $election->isEnded() || ! $election->applications_open) {
             return redirect()->route('elections.index')
                 ->with('error', 'Candidate nominations are currently closed.');
         }
 
         $user = Auth::user()->load('course');
 
-        return view('pages.elections.apply', compact('election', 'user'));
+        $existingApplication = Candidate::where('election_id', $election->id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        return view('pages.elections.apply', compact('election', 'user', 'existingApplication'));
     }
 
     public function apply(Request $request): RedirectResponse
     {
         $election = Election::latest()->first();
-        if (! $election || ! $election->is_enabled || ! $election->applications_open) {
+        if (! $election || ! $election->is_enabled || $election->isEnded() || ! $election->applications_open) {
             return redirect()->route('elections.index')
                 ->with('error', 'Candidate nominations are currently closed.');
         }
@@ -177,8 +197,11 @@ class ElectionController extends Controller
         $data = $request->validate([
             'position' => ['required', 'string', 'in:'.implode(',', Candidate::POSITIONS)],
             'academic_level' => ['required', 'string', 'max:40'],
+            'contact_email' => ['required', 'email', 'max:120'],
+            'contact_phone' => ['required', 'string', 'max:40'],
             'motto' => ['required', 'string', 'max:180'],
             'manifesto' => ['required', 'string', 'min:20', 'max:3000'],
+            'payment_reference' => ['nullable', 'string', 'max:80'],
             'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
@@ -199,22 +222,62 @@ class ElectionController extends Controller
             $photoPath = 'uploads/candidates/'.$filename;
         }
 
+        $fee = Candidate::feeForPosition($data['position']);
+        $hasRef = ! empty($data['payment_reference']);
+
         Candidate::create([
             'election_id' => $election->id,
             'user_id' => $user->id,
             'fullname' => $user->name,
             'reg_no' => $user->reg_no ?? $user->email,
+            'contact_email' => $data['contact_email'],
+            'contact_phone' => $data['contact_phone'],
             'course_id' => $user->course_id,
             'academic_level' => $data['academic_level'],
             'position' => $data['position'],
             'motto' => $data['motto'],
             'manifesto' => $data['manifesto'],
             'photo' => $photoPath,
+            'application_fee_amount' => $fee,
+            'payment_reference' => $data['payment_reference'] ?? null,
+            'payment_status' => $hasRef ? 'submitted' : 'unpaid',
+            'interview_status' => 'pending_payment',
             'status' => 'pending',
         ]);
 
-        return redirect()->route('elections.index')
-            ->with('success', 'Your candidate nomination has been submitted to the Electoral Commission for vetting.');
+        ActivityLog::record(
+            'elections',
+            'candidate_applied',
+            "Submitted nomination for {$data['position']} (Contact: {$data['contact_phone']} / {$data['contact_email']}).",
+            $user
+        );
+
+        return redirect()->route('dashboard')
+            ->with('success', 'Nomination submitted! Complete your application fee payment and await your Electoral Commission interview schedule.');
+    }
+
+    public function submitPayment(Request $request, Candidate $candidate): RedirectResponse
+    {
+        $user = $request->user();
+        abort_unless((int) $candidate->user_id === (int) $user->id, 403);
+
+        $data = $request->validate([
+            'payment_reference' => ['required', 'string', 'min:4', 'max:80'],
+        ]);
+
+        $candidate->update([
+            'payment_reference' => strtoupper(trim($data['payment_reference'])),
+            'payment_status' => 'submitted',
+        ]);
+
+        ActivityLog::record(
+            'elections',
+            'fee_payment_submitted',
+            "Submitted application fee reference {$candidate->payment_reference} for {$candidate->position} candidacy.",
+            $user
+        );
+
+        return back()->with('success', 'Application fee payment reference submitted. Electoral Commission will verify and schedule your interview.');
     }
 
     public function results(): View|RedirectResponse

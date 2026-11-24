@@ -266,8 +266,43 @@ class AdminDashboardController extends Controller
 
     public function deleteTimer(TimerAnnouncement $timer): RedirectResponse
     {
+        $title = $timer->title;
         $timer->delete();
 
+        \App\Models\ActivityLog::record('timers', 'timer_deleted', "Deleted countdown timer: {$title}.");
+
         return back()->with('success', 'Timer announcement deleted.');
+    }
+
+    // --- ACTIVITY AUDIT LOGS & VISITOR ANALYTICS ---
+    public function logs(Request $request): View
+    {
+        $module = $request->query('module');
+        $search = trim((string) $request->query('q'));
+
+        $activities = \App\Models\ActivityLog::query()
+            ->when($module, fn ($q) => $q->where('module', $module))
+            ->when($search, fn ($q) => $q->where('description', 'like', "%{$search}%")->orWhere('user_name', 'like', "%{$search}%")->orWhere('action', 'like', "%{$search}%"))
+            ->latest('created_at')
+            ->paginate(25, ['*'], 'activity_page')
+            ->withQueryString();
+
+        $visitors = \App\Models\VisitorLog::with('user')
+            ->latest('visited_at')
+            ->paginate(25, ['*'], 'visitor_page')
+            ->withQueryString();
+
+        $visitorStats = [
+            'total_visits' => \App\Models\VisitorLog::count(),
+            'unique_ips' => \App\Models\VisitorLog::distinct('ip_address')->count('ip_address'),
+            'today_visits' => \App\Models\VisitorLog::where('visited_at', '>=', now()->startOfDay())->count(),
+            'guest_visits' => \App\Models\VisitorLog::whereNull('user_id')->count(),
+            'member_visits' => \App\Models\VisitorLog::whereNotNull('user_id')->count(),
+            'total_activities' => \App\Models\ActivityLog::count(),
+        ];
+
+        $modules = \App\Models\ActivityLog::distinct()->orderBy('module')->pluck('module');
+
+        return view('admin.logs', compact('activities', 'visitors', 'visitorStats', 'modules', 'module', 'search'));
     }
 }

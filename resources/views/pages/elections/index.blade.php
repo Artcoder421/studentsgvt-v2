@@ -34,6 +34,33 @@
         </div>
     @endif
 
+    @if($myApplication)
+        <div class="card {{ ($myApplication->interview_status === 'failed' || $myApplication->status === 'declined') ? 'card-accent-red' : 'card-accent-blue' }} mb-3">
+            <div class="flex-between flex-wrap mb-1">
+                <div>
+                    <strong>My Nomination ({{ $myApplication->position }}):</strong>
+                    <span class="badge {{ ($myApplication->interview_status === 'failed' || $myApplication->status === 'declined') ? 'badge-crimson' : ($myApplication->status === 'approved' ? 'badge-emerald' : 'badge-navy') }}">
+                        {{ $myApplication->stageLabel() }}
+                    </span>
+                </div>
+                <span class="text-xs mono muted">Fee: TZS {{ number_format($myApplication->application_fee_amount) }} ({{ strtoupper($myApplication->payment_status) }})</span>
+            </div>
+            @if($myApplication->interview_status === 'failed' || $myApplication->status === 'declined')
+                <div class="text-xs mt-1" style="color:var(--nit-red-dark);font-weight:700;">
+                    Did Not Pass Interview{{ $myApplication->interview_notes ? ' — ' . $myApplication->interview_notes : '' }}
+                </div>
+            @elseif($myApplication->interview_date)
+                <div class="text-xs mt-1"><strong>Scheduled Interview:</strong> {{ $myApplication->interview_date }}</div>
+            @elseif($myApplication->payment_status === 'unpaid')
+                <form method="POST" action="{{ route('elections.application.payment', $myApplication) }}" class="flex-center flex-wrap mt-2" style="gap:8px;">
+                    @csrf
+                    <input type="text" name="payment_reference" class="form-control mono" style="max-width:280px;" placeholder="Enter Fee Payment Reference..." required>
+                    <button type="submit" class="btn btn-primary btn-sm">Submit Payment Ref</button>
+                </form>
+            @endif
+        </div>
+    @endif
+
     <div class="card mb-3 flex-between flex-wrap" style="padding:12px 16px;">
         <div class="flex-center flex-wrap" style="gap:8px;">
             <span class="badge {{ $election->isVotingActive() ? 'badge-emerald' : 'badge-crimson' }}">
