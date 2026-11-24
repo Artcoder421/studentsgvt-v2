@@ -441,9 +441,19 @@ class SonitPortalTest extends TestCase
         $this->get('/')->assertSee('Hon. Beatrice E. Mwakalinga');
         $this->actingAs($beatriceUser)->get('/dashboard')->assertSee('SONIT President');
 
-        // 5. Activity Logs & Visitor Logs recorded automatically and viewable in /admin/logs
+        // 5. Activity Logs & Visitor Traffic are STRICTLY Admin-only (guests, students, and CRs blocked)
         $this->assertGreaterThan(0, \App\Models\ActivityLog::count());
         $this->assertGreaterThan(0, \App\Models\VisitorLog::count());
+
+        $bltmCr = User::where('reg_no', 'NIT/BLTM/2022/4805')->firstOrFail();
+        $this->actingAs($student)->get('/admin/logs')->assertStatus(403);
+        $this->actingAs($bltmCr)->get('/admin/logs')->assertStatus(403);
+        $this->actingAs($student)->get('/dashboard')->assertDontSee('Unique Visitors (IP)');
+
+        $this->actingAs($admin)->get('/admin')
+            ->assertStatus(200)
+            ->assertSee('Portal Traffic (Admin Only)');
+
         $this->actingAs($admin)->get('/admin/logs')
             ->assertStatus(200)
             ->assertSee('election_ended')

@@ -38,6 +38,10 @@ class AdminDashboardController extends Controller
             'urgent_announcements' => Announcement::where('is_urgent', true)->where('is_published', true)->count(),
             'charity_raised' => CharityCampaign::sum('raised_amount'),
             'open_lost_found' => LostFoundItem::where('status', 'open')->count(),
+            'total_visits' => \App\Models\VisitorLog::count(),
+            'today_visits' => \App\Models\VisitorLog::where('visited_at', '>=', now()->startOfDay())->count(),
+            'unique_visitors' => \App\Models\VisitorLog::distinct('ip_address')->count('ip_address'),
+            'total_activities' => \App\Models\ActivityLog::count(),
         ];
 
         $recentTickets = HelpTicket::with('user')->latest()->take(5)->get();

@@ -20,10 +20,13 @@
         <strong style="font-size:30px;color:var(--crimson-600);">{{ $metrics['open_tickets'] }}</strong>
         <div class="text-xs muted mt-1">{{ $metrics['pending_bookings'] }} venue · {{ $metrics['pending_accommodations'] }} housing pending</div>
     </div>
-    <div class="card">
-        <span class="kicker">Charity Raised (TZS)</span>
-        <strong class="mono" style="font-size:24px;color:var(--emerald-700);">{{ number_format($metrics['charity_raised']) }}</strong>
-        <div class="text-xs muted mt-1">{{ $metrics['active_timers'] }} active top countdown timers</div>
+    <div class="card card-accent-blue">
+        <span class="kicker">Portal Traffic (Admin Only)</span>
+        <strong class="mono" style="font-size:28px;color:var(--nit-blue-dark);">{{ number_format($metrics['total_visits']) }}</strong>
+        <div class="text-xs muted mt-1">
+            {{ number_format($metrics['today_visits']) }} today · {{ number_format($metrics['unique_visitors']) }} unique IPs ·
+            <a href="{{ route('admin.logs') }}">View Traffic & Logs</a>
+        </div>
     </div>
 </div>
 
